@@ -4,7 +4,7 @@ from state import State
 
 
 class OperatorSas:
-    def __init__(self, lines, variables, original_action=None, copy=None, costs=False):
+    def __init__(self, precond, eff, cost, name, original_action=None, copy=None):
         if copy is not None:
             self.name = copy.name
             self.preconditions = copy.preconditions.copy()
@@ -26,35 +26,14 @@ class OperatorSas:
             self.denominator = original_action.denominator
             self.cost = original_action.cost
         else:
-            self.name = lines.pop(0)
-            self.preconditions = {}
-            self.effects = {}
-            self.numerator = 1
-            self.denominator = 1
-
-            prevail_conds = int(lines.pop(0))
-            for i in range(prevail_conds):
-                line = lines.pop(0)
-                l = line.split()
-                var, atom = int(l[0]), int(l[1])
-                self.preconditions[var] = variables[var].variables[atom]
-
-            precond_conds = int(lines.pop(0))
-            for i in range(precond_conds):
-                line = lines.pop(0)
-                l = line.split()
-                var, pre, eff = int(l[1]), int(l[2]), int(l[3])
-                self.preconditions[var] = variables[var].variables[pre]
-                self.effects[var] = variables[var].variables[eff]
-            self.shadow = False  # Action is a shadow action(normal -> shadow state)
+            self.preconditions = precond
+            self.cost = cost
+            self.effects = eff
+            self.name = name
             self.variables = list(self.preconditions.copy().keys())
             self.values = list(self.preconditions.copy().values())
 
-            if costs:
-                self.cost = int(lines.pop(0))
-            else:
-                self.cost = 1
-            lines.pop(0)
+            self.shadow = False  # Action is a shadow action(normal -> shadow state)
 
     def __str__(self):
         ret = " Name: {}, Shadow: {}, {}".format(self.name, self.shadow, (self.numerator / self.denominator))
@@ -73,15 +52,11 @@ class OperatorSas:
     def __hash__(self):
         return hash(self.name)
 
-    def applicable(self, state):
+    def applicable(self, state: State):
         for var, atom in self.preconditions.items():
             if state.variables[var] != atom:
                 return False
-
         return True
-
-    def same_before(self, other):
-        pass
 
     def apply(self, state):
         state_copy = state.variables.copy()

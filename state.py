@@ -1,6 +1,8 @@
 class State:
-    def __init__(self, variables, shadow_action=None):
+    def __init__(self, variables, shadow_action=None, name=None,):
+        # Currently variables are strings
         self.variables = variables
+        self.name = name
         self.action_state = {}
         self.shadow_action = shadow_action
         self.position = 0
