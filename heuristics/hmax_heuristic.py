@@ -1,9 +1,8 @@
 import sys
 import math
-from collections import defaultdict
 
 from a_star import initialize
-from parser import Parser
+from parser.parser import Parser
 
 
 def hmax(facts, state, actions, goal, var_len, preconditions_of):
