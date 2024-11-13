@@ -4,57 +4,27 @@ from parser.state import State
 
 
 class OperatorSas:
-    def __init__(self, precond, eff, cost, name, probability=1, original_action=None, copy=None):
-        if copy is not None:
-            self.name = copy.name
-            self.preconditions = copy.preconditions.copy()
-            self.variables = list(self.preconditions.copy().keys())
-            self.values = list(self.preconditions.copy().values())
-            self.effects = copy.effects.copy()
-            self.shadow = copy.shadow
-            self.numerator = copy.numerator
-            self.denominator = copy.denominator
-            self.cost = copy.cost
+    def __init__(self, precond, eff, cost, name, probability=1):
+        self.name: str = name
+        self.cost: int = cost
 
-        elif original_action is not None:
-            self.name = original_action.name
-            self.preconditions = original_action.preconditions
-            self.variables = list(self.preconditions.copy().keys())
-            self.values = list(self.preconditions.copy().values())
-            self.effects = original_action.effects
-            self.cost = original_action.cost
+        self.preconditions: dict[int, int] = precond
+        self.effects: dict[int, int] = eff
 
-            self.shadow = True
+        self.variables: list[int] = list(self.preconditions.keys())
+        self.values: list[int] = list(self.preconditions.values())
 
-            self.numerator = original_action.denominator - original_action.numerator
-            self.denominator = original_action.denominator
-        else:
-            self.name: str = name
-            self.cost: int = cost
-
-            self.preconditions: dict[int, int] = precond
-            self.effects: dict[int, int] = eff
-
-            self.variables: list[int] = list(self.preconditions.keys())
-            self.values: list[int] = list(self.preconditions.values())
-
-            self.probability: float = probability
-
-            self.shadow: bool = False
+        self.probability: float = probability
 
     def __str__(self):
-        ret = " Name: {}, Shadow: {}, {}".format(self.name, self.shadow, self.probability)
+        ret = " Name: {}, {}".format(self.name, self.probability)
         return ret
 
     def __eq__(self, other):
-        return (self.preconditions == other.preconditions) and (self.effects == other.effects) and \
-            (self.shadow == other.shadow)
+        return (self.preconditions == other.preconditions) and (self.effects == other.effects)
 
     def __repr__(self):
         return self.__str__()
-
-    def __copy__(self):
-        return OperatorSas(None, None, None, self)
 
     def __hash__(self):
         return hash(self.name)

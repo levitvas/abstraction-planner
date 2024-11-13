@@ -1,4 +1,3 @@
-import copy
 import numpy as np
 
 from hiive.mdptoolbox.mdp import ValueIteration
@@ -7,35 +6,7 @@ from scipy.sparse import csr_matrix
 from parser.parser import Parser
 from parser.state import State
 from utils.abstraction import abstract_all, action_reduction, create_state_space_with_shadow_states
-
-
-def check_goal(end_state, current_state):
-    for atom in end_state.variables:
-        if atom in current_state.variables:
-            continue
-        else:
-            return False
-
-    return True
-
-
-def bfs_solve(operators, begin_state, end_state):
-    visited = [begin_state]
-    stack = [(begin_state, [])]
-    while stack:
-        cur_state, path = stack.pop(0)
-        for action in operators:
-            if action.applicable(cur_state):
-                new_state = action.apply(cur_state)
-                if new_state not in visited:
-                    # Check if goal
-                    if check_goal(end_state, new_state):
-                        return path + [action]
-                    visited.append(new_state)
-                    stack.append((new_state, path + [action]))
-
-    return []
-
+from utils.help_functions import check_goal
 
 def mutex_legal(state, mutex_groups, variables):
     for group in mutex_groups:
@@ -50,7 +21,6 @@ def mutex_legal(state, mutex_groups, variables):
 
 def solve_sas(sas_file, parser: Parser, gamma, projection: list[int]):
     # ------------ Abstraction implementation
-
     new_start, new_end, new_operators = abstract_all(parser, projection)
     # TODO: Change all states to use new states
     # TODO: Change all stuff to use integers instead of strings
@@ -67,40 +37,40 @@ def solve_sas(sas_file, parser: Parser, gamma, projection: list[int]):
     print([op.action_result.items() for op in bfs_states])
     print("% ------ %")
 
-    exit(0)
 
+    #  In theory can find the goal ids when state spacing
+    print(new_end)
     goal_idx = []
-    actions = []
-    for state in bfs:
-        for act in state.action_state.keys():
-            if check_goal(parser.end_state, state) and state.variables[-1] != 'shadow':
-                goal_idx.append(bfs.index(state))
-            if act not in actions and not act.shadow:
-                actions.append(act)
+    for (idx, state) in enumerate(bfs_states):
+        if check_goal(new_end, state) and state.shadow_state is False:
+            goal_idx.append(idx)
 
-    if len(actions) * len(bfs) >= 2000000:  # Change number to make a limit. The higher the number the longer it runs
-        print("Too big")
+    if len(final_operators) * len(bfs_states) >= 2000000:  # Change number to make a limit. The higher the number the longer it runs
+        print("! Excessive state space")
         return 0
 
-    if len(actions) == 0:
-        print("no actions")
+    if len(final_operators) == 0:
+        print("! No actions")
         return 0
 
     transition_ar = []
     reward_ar = []
 
     # Start filling up and creating the transition and reward sparse matrices
-    for idx, operator in enumerate(actions):
+    for idx, operator in enumerate(final_operators):
         data = []
         row = []
         col = []
         data_r = []
         row_r = []
         col_r = []
-        for pos, state in enumerate(bfs):
-            if operator.denominator == 0:
+        state: State
+        for pos, state in enumerate(bfs_states):
+            if operator.probability == 0:
+                print("! FATAL ERROR: Operator probability is 0")
                 exit(0)
-            if operator not in state.action_state:
+
+            if idx not in state.action_result.keys():
                 data.append(1.0)
                 row.append(pos)
                 col.append(pos)
@@ -109,6 +79,7 @@ def solve_sas(sas_file, parser: Parser, gamma, projection: list[int]):
                 row_r.append(pos)
                 col_r.append(pos)
                 continue
+
             if pos in goal_idx:
                 data.append(1.0)
                 row.append(pos)
@@ -118,38 +89,38 @@ def solve_sas(sas_file, parser: Parser, gamma, projection: list[int]):
                 row_r.append(pos)
                 col_r.append(pos)
                 continue
-            next_state = state.action_state[operator]
 
-            pos_n = next_state.position
-            data.append(round(operator.probability(), 4))
+            next_state = state.action_result[idx][0]
+            data.append(round(operator.probability, 4))
             row.append(pos)
-            col.append(pos_n)
+            col.append(next_state)
 
             data_r.append(-operator.cost)
             row_r.append(pos)
-            col_r.append(pos_n)
-            if operator.probability() != 1:
-                shadow_op = OperatorSas(None, None, operator)
-                sh_state = state.action_state[shadow_op]
+            col_r.append(next_state)
 
-                data.append(round(shadow_op.probability(), 4))
+            if operator.probability != 1:
+                sh_state = state.action_result[idx][1]
+                data.append(round(1 - operator.probability, 4))
                 row.append(pos)
-                sh_index = sh_state.position
+                sh_index = sh_state
                 col.append(sh_index)
 
                 data_r.append(0.0)
                 row_r.append(pos)
                 col_r.append(sh_index)
 
-        if len(bfs) - 1 not in row or len(bfs) - 1 not in col:
+        bfs_len = len(bfs_states)
+        if bfs_len - 1 not in row or bfs_len - 1 not in col:
             data.append(0.0)
-            row.append(len(bfs) - 1)
-            col.append(len(bfs) - 1)
+            row.append(bfs_len - 1)
+            col.append(bfs_len - 1)
 
-        if len(bfs) - 1 not in row_r or len(bfs) - 1 not in col_r:
+        if bfs_len - 1 not in row_r or bfs_len - 1 not in col_r:
             data_r.append(0.0)
-            row_r.append(len(bfs) - 1)
-            col_r.append(len(bfs) - 1)
+            row_r.append(bfs_len - 1)
+            col_r.append(bfs_len - 1)
+
         a = csr_matrix((np.array(data), (np.array(row), np.array(col))))
         b = csr_matrix((np.array(data_r), (np.array(row_r), np.array(col_r))))
         transition_ar.append(a)
@@ -169,11 +140,11 @@ def solve_sas(sas_file, parser: Parser, gamma, projection: list[int]):
     vi.run()
     # print("V is {}".format(vi.V)) #  Uncomment to print the value function for each state
 
-    bfs_solved = bfs_solve(n_operators, parser.begin_state, parser.end_state)
-    if bfs_solved:
-        for a in bfs_solved:
+    # bfs_solved = bfs_solve(n_operators, parser.begin_state, parser.end_state)
+    # if bfs_solved:
+    #     for a in bfs_solved:
             # print(a) #  Prints the path in the raw abstraction
-            bfs_sum -= a.cost
+            # bfs_sum -= a.cost
 
     return vi.V[0]
 
