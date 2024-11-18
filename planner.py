@@ -39,7 +39,7 @@ def solve_sas(parser: Parser, heuristic, gamma=None, projection=None):
 if __name__ == '__main__':
     # input_f = sys.argv[1]
     # heuristic = sys.argv[2]
-    input_f = 'transport_example.sas'
+    input_f = 'blocks.sas'
     heuristic = 'abs'
     projection = [1, 2]
     gamma = 0.9

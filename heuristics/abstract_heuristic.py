@@ -16,6 +16,7 @@ def abstract_h(begin_state, end_state, parser: Parser, gamma, projection: list[i
     logging.debug(begin_state)
     new_start, new_end, new_operators = abstract_all(begin_state.copy(), end_state.copy(), parser, projection)
     logging.debug(new_start)
+    logging.debug(new_end)
     # TODO: Change all stuff to use integers instead of strings
 
     logging.debug(new_operators)
@@ -27,7 +28,7 @@ def abstract_h(begin_state, end_state, parser: Parser, gamma, projection: list[i
     bfs_states: list[State]
     bfs_states, shadow_num = create_state_space_with_shadow_states(final_operators, new_start)  # Starts from beginning state and generates all possible states
     logging.debug("% State space size: {}, shadow states {}".format(len(bfs_states) - shadow_num, shadow_num))
-    logging.debug([op.action_result.items() for op in bfs_states])
+    # logging.debug([op.action_result.items() for op in bfs_states])
     logging.debug("% ------ %")
 
 
@@ -90,6 +91,10 @@ def abstract_h(begin_state, end_state, parser: Parser, gamma, projection: list[i
             data_r.append(-operator.cost)
             row_r.append(pos)
             col_r.append(next_state)
+
+            if operator.probability > 1:
+                logging.error("! FATAL ERROR: Operator probability > 1")
+                exit(0)
 
             if operator.probability != 1:
                 sh_state = state.action_result[idx][1]

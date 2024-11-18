@@ -25,7 +25,8 @@ class State:
     def __eq__(self, other):
         a = self.variables == other.variables
         b = self.action_id == other.action_id
-        return a and b
+        c = self.shadow_state == other.shadow_state
+        return a and b and c
 
     def copy(self):
         return State(self.variables.copy(), self.action_id, self.name)

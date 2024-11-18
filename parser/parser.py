@@ -105,7 +105,7 @@ class Parser:
             var_tuple = (int(split[0]), int(split[1]))
             tuples.append(var_tuple)
 
-            return tuples
+        return tuples
 
     def make_variable(self, lines) -> (list, str):
         var_name = lines.pop(0)

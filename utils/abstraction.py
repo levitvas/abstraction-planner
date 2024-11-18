@@ -24,8 +24,7 @@ def abstract_all(begin_state: list, end_state: State, parser: Parser, projection
     new_end_state: State = State(end_state)
     for (idx, atom) in enumerate(new_end_state):
         if idx in abs_pos:
-            new_begin_state.variables[idx] = -1
-
+            new_end_state.variables[idx] = -1
 
     # Abstract all actions
     new_operators = []
@@ -72,7 +71,7 @@ def action_reduction(new_operators: list[OperatorSas]):
     # Step 3
     final_operators = []
     for (pre, eff), ops in groups.items():
-        new_probability = sum(op.probability for op in ops)
+        new_probability = min(sum(op.probability for op in ops), 1)
         # TODO: Revise the naming
         final_operators.append(
             OperatorSas(ops[0].preconditions, ops[0].effects, ops[0].cost, ops[0].name, new_probability))
