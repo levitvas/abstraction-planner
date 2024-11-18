@@ -4,7 +4,7 @@ from parser.state import State
 
 
 class OperatorSas:
-    def __init__(self, precond, eff, cost, name, probability=1):
+    def __init__(self, precond, eff, cost, name, probability=1.):
         self.name: str = name
         self.cost: int = cost
 
@@ -37,19 +37,19 @@ class OperatorSas:
                 return False
         return True
 
-    def apply(self, state: State, action_id: int):
-        new_state = State(state.variables.copy())
+    def apply(self, state_variables: list, action_id: int = -1):
+        new_state = State(state_variables.copy())
         for var, atom in self.effects.items():
             new_state.variables[var] = atom
         if self.probability != 1:
-            shadow_state = State(state.variables.copy(), action_id, self.name)
+            shadow_state = State(state_variables.copy(), action_id, self.name)
             shadow_state.shadow_state = True
             return new_state, shadow_state
         return new_state, None
 
     def abstract(self, variables, positions):
         joined = self.preconditions.items()
-        abstracted_op = OperatorSas(self.preconditions, self.effects, self.cost, self.name, self.probability)
+        abstracted_op = OperatorSas(self.preconditions.copy(), self.effects.copy(), self.cost, self.name, self.probability)
         for (var, atom) in joined:
             if var in positions:
                 # if values == 0:
@@ -60,7 +60,6 @@ class OperatorSas:
         for pos in positions:
             abstracted_op.preconditions.pop(pos, None)
             abstracted_op.effects.pop(pos, None)
-
         return abstracted_op
 
     def get_max(self, other):

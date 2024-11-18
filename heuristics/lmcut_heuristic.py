@@ -2,7 +2,7 @@ import math
 import sys
 import copy
 
-from a_star import initialize
+from a_star_search import initialize
 from parser.action import OperatorSas
 from parser.parser import Parser
 

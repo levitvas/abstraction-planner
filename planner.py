@@ -1,12 +1,13 @@
 import sys
 
-from lmcut import lm_cut
-from hmax import hmax
-from parser import Parser
-from a_star import a_star, initialize, generate_applicable_operators
+from a_star_search import a_star
+from heuristics.abstract_heuristic import abstract_h
+from heuristics.hmax_heuristic import hmax
+from heuristics.lmcut_heuristic import lm_cut
+from parser.parser import Parser
 
 
-def solve_sas(parser: Parser, heuristic):
+def solve_sas(parser: Parser, heuristic, gamma=None, projection=None):
     bfs_sum = 0
     F = []
     g = set()
@@ -17,15 +18,15 @@ def solve_sas(parser: Parser, heuristic):
     s_0 = set()
     for num, var in enumerate(parser.begin_state.variables):
         s_0.add((num, var))
-    for num, var in enumerate(parser.end_variables):
-        g.add(F.index((var, parser.end_state.variables[num])))
+    for var, val in parser.end_variables.items():
+        g.add(F.index((var, val)))
 
     # print(parser.begin_state)
     # print(parser.end_variables)
     # print(parser.end_variables)
     # print(F)
 
-    ret = a_star(F, parser.begin_state.variables, parser.operators, parser.end_variables, heuristic, len(parser.variables))
+    ret = a_star(F, parser.begin_state.variables, parser.operators, parser.end_variables, heuristic, len(parser.variables), parser, gamma, projection)
     if not ret:
         return 0
     cost, path = ret[0], ret[1]
@@ -36,8 +37,12 @@ def solve_sas(parser: Parser, heuristic):
 
 
 if __name__ == '__main__':
-    input_f = sys.argv[1]
-    heuristic = sys.argv[2]
+    # input_f = sys.argv[1]
+    # heuristic = sys.argv[2]
+    input_f = 'transport_example.sas'
+    heuristic = 'abs'
+    projection = [1, 2]
+    gamma = 0.9
 
     with open(input_f) as f:
         lines = f.read().split('\n')
@@ -45,6 +50,8 @@ if __name__ == '__main__':
 
     if heuristic == 'hmax':
         predicted_cost = solve_sas(parser, hmax)
+    elif heuristic == 'abs':
+        predicted_cost = solve_sas(parser, abstract_h, gamma, projection)
     else:
         predicted_cost = solve_sas(parser, lm_cut)
 

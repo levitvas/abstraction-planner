@@ -3,6 +3,8 @@ import math
 import time
 from collections import defaultdict
 
+from parser.action import OperatorSas
+
 
 def initialize(facts, operators):
     counter = [[] for _ in range(len(operators))]
@@ -64,7 +66,7 @@ def fdr_to_strips(state):
     return st
 
 
-def a_star(facts, init_state, actions, goal_state, heuristic, var_len):
+def a_star(facts, init_state, actions, goal_state, heuristic, var_len, parser, gamma=None, projection=None):
     open_set = []
 
     g_score = dict()
@@ -80,10 +82,18 @@ def a_star(facts, init_state, actions, goal_state, heuristic, var_len):
         goal_strips.add((num, val))
 
     counter, preconditions_of, first_visit = initialize(facts, actions)
-    heapq.heappush(open_set, (
-        heuristic(facts, fdr_to_strips(init_state), actions, goal_strips, var_len, preconditions_of), order, init_state))
-    order += 1
 
+    if projection is not None:
+        predicted_cost = heuristic(init_state, parser.end_state.variables, parser, gamma, projection)
+        heapq.heappush(open_set, (
+            predicted_cost,
+            order, init_state))
+    else:
+        heapq.heappush(open_set, (
+            heuristic(facts, fdr_to_strips(init_state), actions, goal_strips, var_len, preconditions_of),
+            order, init_state))
+
+    order += 1
     start = time.time()
 
 
@@ -100,9 +110,10 @@ def a_star(facts, init_state, actions, goal_state, heuristic, var_len):
         applicable_ops = generate_applicable_operators(current_state, counter, preconditions_of, actions)
 
         for action in applicable_ops:
-            action = actions[action]
+            action: OperatorSas = actions[action]
             new_g_score = g_score[tuple(current_state)] + action.cost
-            child_state = action.apply(current_state)
+            child_state, _sh_state = action.apply(current_state)
+            child_state = child_state.variables
 
             if new_g_score < g_score.get(tuple(child_state), math.inf):
                 parent[tuple(child_state)] = (current_state, action, action.cost)
@@ -114,7 +125,14 @@ def a_star(facts, init_state, actions, goal_state, heuristic, var_len):
                 # print(action)
                 # print()
                 # print(child_state)
-                heur = heuristic(facts, fdr_to_strips(child_state), actions, goal_strips, var_len, preconditions_of)
+
+                if check_goal(goal_state, child_state):
+                    heur = 0
+                elif projection is not None:
+                    heur = heuristic(child_state, parser.end_state.variables, parser, gamma,
+                                               projection)
+                else:
+                    heur = heuristic(facts, fdr_to_strips(child_state), actions, goal_strips, var_len, preconditions_of)
 
                 heapq.heappush(open_set, (
                     new_g_score + heur, order,

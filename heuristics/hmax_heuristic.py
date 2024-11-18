@@ -1,7 +1,7 @@
 import sys
 import math
 
-from a_star import initialize
+from a_star_search import initialize
 from parser.parser import Parser
 
 

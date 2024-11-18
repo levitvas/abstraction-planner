@@ -1,9 +1,11 @@
+import logging
+
 from parser.action import OperatorSas
 from parser.parser import Parser
 from parser.state import State
 
 
-def abstract_all(parser: Parser, projection: list[int]):
+def abstract_all(begin_state: list, end_state: State, parser: Parser, projection: list[int]):
     projection_vars = projection
     abs_pos: list[int] = []
     for (i, v) in enumerate(parser.variables):
@@ -13,13 +15,13 @@ def abstract_all(parser: Parser, projection: list[int]):
     # abstraction_var: list[State] = [parser.variables[i] for i in abs_pos]
 
     # Abstract beginning state
-    new_begin_state: State = parser.begin_state.copy()
+    new_begin_state: State = State(begin_state)
     for (idx, atom) in enumerate(new_begin_state):
         if idx in abs_pos:
             new_begin_state.variables[idx] = -1
 
     # Abstract ending state
-    new_end_state: State = parser.end_state.copy()
+    new_end_state: State = State(end_state)
     for (idx, atom) in enumerate(new_end_state):
         if idx in abs_pos:
             new_begin_state.variables[idx] = -1
@@ -39,8 +41,8 @@ def action_reduction(new_operators: list[OperatorSas]):
     # 3. If dominated, remove from list
     # 4. If not dominated, sum the probabilities of the groups
 
-    print("Starting operator reduction")
-    print("% Operators before reduction: {}".format(len(new_operators)))
+    logging.debug("Starting operator reduction")
+    logging.debug("% Operators before reduction: {}".format(len(new_operators)))
 
     # Step 1
     groups = {}
@@ -65,7 +67,7 @@ def action_reduction(new_operators: list[OperatorSas]):
                             # new_operators.remove(op)
                             groups[(pre2, eff2)].remove(op)
                             break
-    print("% Operators after removing dominated operators: {}".format(sum(len(v) for v in groups.values())))
+    logging.debug("% Operators after removing dominated operators: {}".format(sum(len(v) for v in groups.values())))
 
     # Step 3
     final_operators = []
@@ -75,7 +77,7 @@ def action_reduction(new_operators: list[OperatorSas]):
         final_operators.append(
             OperatorSas(ops[0].preconditions, ops[0].effects, ops[0].cost, ops[0].name, new_probability))
 
-    print("% Operators after summing probabilities: {}".format(len(final_operators)))
+    logging.debug("% Operators after summing probabilities: {}".format(len(final_operators)))
     return final_operators
 
 def create_state_space_with_shadow_states(operators, start_state):
@@ -92,7 +94,7 @@ def create_state_space_with_shadow_states(operators, start_state):
             # print("  Try action: ", action.name)
             # Create the shadow states here directly
             if action.applicable(cur_state, idx):
-                new_state, shadow_state = action.apply(cur_state, idx)
+                new_state, shadow_state = action.apply(cur_state.variables, idx)
                 # print("    Passed action: ",action.preconditions, action.effects, cur_state.variables, new_state.variables)
 
                 # TODO: Recheck mutex groups
