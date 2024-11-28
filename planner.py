@@ -7,7 +7,7 @@ from heuristics.lmcut_heuristic import lm_cut
 from parser.parser import Parser
 
 
-def solve_sas(parser: Parser, heuristic, gamma=None, projection=None):
+def solve_sas(parser: Parser, heuristic, gamma=None, projections=None):
     bfs_sum = 0
     F = []
     g = set()
@@ -26,22 +26,22 @@ def solve_sas(parser: Parser, heuristic, gamma=None, projection=None):
     # print(parser.end_variables)
     # print(F)
 
-    ret = a_star(F, parser.begin_state.variables, parser.operators, parser.end_variables, heuristic, len(parser.variables), parser, gamma, projection)
+    ret, expanded_states = a_star(F, parser.begin_state.variables, parser.operators, parser.end_variables, heuristic, len(parser.variables), parser, gamma, projections)
     if not ret:
         return 0
     cost, path = ret[0], ret[1]
     for (node, act) in path:
         print(act.name)
     print(f"Plan cost: {cost}")
+    print(f"Expanded states: {expanded_states}")
     return bfs_sum
 
-
-if __name__ == '__main__':
+def create_plan():
     # input_f = sys.argv[1]
     # heuristic = sys.argv[2]
-    input_f = 'blocks.sas'
+    input_f = 'driverlog-1.sas'
     heuristic = 'abs'
-    projection = [1, 2]
+    projections = [[0, 6]]
     gamma = 0.9
 
     with open(input_f) as f:
@@ -51,7 +51,10 @@ if __name__ == '__main__':
     if heuristic == 'hmax':
         predicted_cost = solve_sas(parser, hmax)
     elif heuristic == 'abs':
-        predicted_cost = solve_sas(parser, abstract_h, gamma, projection)
+        predicted_cost = solve_sas(parser, abstract_h, gamma, projections)
     else:
         predicted_cost = solve_sas(parser, lm_cut)
 
+
+if __name__ == '__main__':
+    create_plan()

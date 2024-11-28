@@ -15,8 +15,8 @@ def mutex_legal(state, mutex_groups, variables):
 
 if __name__ == '__main__':
     gamma = 0.9
-    file_single = 'blocks.sas'
-    projection = [0, 1, 8]
+    file_single = 'transport_example.sas'
+    projection = [1, 2]
 
     with open(file_single) as f:
         lines = f.read().split('\n')

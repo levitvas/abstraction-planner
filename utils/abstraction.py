@@ -4,7 +4,6 @@ from parser.action import OperatorSas
 from parser.parser import Parser
 from parser.state import State
 
-
 def abstract_all(begin_state: list, end_state: State, parser: Parser, projection: list[int]):
     projection_vars = projection
     abs_pos: list[int] = []

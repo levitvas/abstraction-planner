@@ -8,6 +8,22 @@ from parser.parser import Parser
 from parser.state import State
 from utils.abstraction import abstract_all, create_state_space_with_shadow_states, action_reduction
 from utils.help_functions import check_goal
+from value_iter import optimized_value_iteration
+
+
+def value_iteration_optimized(transition_ar, reward_ar, gamma=0.99, epsilon=1e-6, max_iter=1000):
+    n_states = transition_ar[0].shape[0]
+    V = np.zeros(n_states)
+
+    for _ in range(max_iter):
+        V_old = V.copy()
+        Q = np.array([reward_ar[a].dot(np.ones(n_states)) + gamma * transition_ar[a].dot(V)
+                      for a in range(len(transition_ar))])
+        V = Q.max(axis=0)
+        if np.max(np.abs(V - V_old)) < epsilon:
+            break
+
+    return V[0]
 
 def abstract_h(begin_state, end_state, parser: Parser, gamma, projection: list[int]):
     # ------------ Abstraction implementation
@@ -123,17 +139,19 @@ def abstract_h(begin_state, end_state, parser: Parser, gamma, projection: list[i
         transition_ar.append(a)
         reward_ar.append(b)
 
+
     bfs_sum = 0
     try:
         a = np.array(transition_ar)
         b = np.array(reward_ar)
-        vi = ValueIteration(a, b, gamma)
+        vi = optimized_value_iteration(a, b, gamma)
+        # vi = ValueIteration(a, b, gamma)
     except OverflowError:
         logging.error("MDP library error")
         return 0.0
     except RuntimeWarning:
         logging.error("MDP library error")
         return 0.0
-    vi.run()
+    # vi.run()
 
-    return vi.V[0]
+    return vi[0][0]
