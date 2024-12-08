@@ -1,7 +1,7 @@
 from numpy.core.defchararray import isdigit
 
-from parser.action import OperatorSas
-from parser.state import State
+from sas_parser.action import OperatorSas
+from sas_parser.state import State
 
 class Parser:
     def __init__(self, lines):

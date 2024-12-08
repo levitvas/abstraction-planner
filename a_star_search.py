@@ -3,7 +3,7 @@ import math
 import time
 from collections import defaultdict
 
-from parser.action import OperatorSas
+from sas_parser.action import OperatorSas
 
 
 def initialize(facts, operators):

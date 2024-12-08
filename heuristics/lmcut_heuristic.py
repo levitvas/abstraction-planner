@@ -3,8 +3,8 @@ import sys
 import copy
 
 from a_star_search import initialize
-from parser.action import OperatorSas
-from parser.parser import Parser
+from sas_parser.action import OperatorSas
+from sas_parser.parser import Parser
 
 
 def lm_cut(facts, initial_state, ops, goal, var_len, preconditions_of):

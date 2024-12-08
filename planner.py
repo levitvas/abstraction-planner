@@ -4,7 +4,7 @@ from a_star_search import a_star
 from heuristics.abstract_heuristic import abstract_h
 from heuristics.hmax_heuristic import hmax
 from heuristics.lmcut_heuristic import lm_cut
-from parser.parser import Parser
+from sas_parser.parser import Parser
 
 
 def solve_sas(parser: Parser, heuristic, gamma=None, projections=None):
@@ -21,9 +21,9 @@ def solve_sas(parser: Parser, heuristic, gamma=None, projections=None):
     for var, val in parser.end_variables.items():
         g.add(F.index((var, val)))
 
-    # print(parser.begin_state)
-    # print(parser.end_variables)
-    # print(parser.end_variables)
+    # print(sas_parser.begin_state)
+    # print(sas_parser.end_variables)
+    # print(sas_parser.end_variables)
     # print(F)
 
     ret, expanded_states = a_star(F, parser.begin_state.variables, parser.operators, parser.end_variables, heuristic, len(parser.variables), parser, gamma, projections)
@@ -39,9 +39,15 @@ def solve_sas(parser: Parser, heuristic, gamma=None, projections=None):
 def create_plan():
     # input_f = sys.argv[1]
     # heuristic = sys.argv[2]
-    input_f = 'driverlog-1.sas'
+    input_f = 'transport-example.sas'
     heuristic = 'abs'
-    projections = [[0, 6]]
+
+    # TODO: Dont resolve MDP, save the MDP for each projection.
+    # TODO: grid example, go diagonal
+    # TODO: GBFS
+    # TODO: Check other heuristics in alternation
+
+    projections = [[1, 2]]
     gamma = 0.9
 
     with open(input_f) as f:

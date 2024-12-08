@@ -1,5 +1,5 @@
 from heuristics.abstract_heuristic import abstract_h
-from parser.parser import Parser
+from sas_parser.parser import Parser
 
 
 def mutex_legal(state, mutex_groups, variables):
@@ -15,8 +15,8 @@ def mutex_legal(state, mutex_groups, variables):
 
 if __name__ == '__main__':
     gamma = 0.9
-    file_single = 'transport_example.sas'
-    projection = [1, 2]
+    file_single = 'driverlog-1.sas'
+    projection = [1, 2, 6]
 
     with open(file_single) as f:
         lines = f.read().split('\n')

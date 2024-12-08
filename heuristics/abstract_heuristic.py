@@ -4,8 +4,8 @@ import logging
 from hiive.mdptoolbox.mdp import ValueIteration
 from scipy.sparse import csr_matrix
 
-from parser.parser import Parser
-from parser.state import State
+from sas_parser.parser import Parser
+from sas_parser.state import State
 from utils.abstraction import abstract_all, create_state_space_with_shadow_states, action_reduction
 from utils.help_functions import check_goal
 from value_iter import optimized_value_iteration
@@ -144,7 +144,7 @@ def abstract_h(begin_state, end_state, parser: Parser, gamma, projection: list[i
     try:
         a = np.array(transition_ar)
         b = np.array(reward_ar)
-        vi = optimized_value_iteration(a, b, gamma)
+        vi = ValueIteration(a, b, gamma)
         # vi = ValueIteration(a, b, gamma)
     except OverflowError:
         logging.error("MDP library error")
@@ -152,6 +152,7 @@ def abstract_h(begin_state, end_state, parser: Parser, gamma, projection: list[i
     except RuntimeWarning:
         logging.error("MDP library error")
         return 0.0
-    # vi.run()
+    vi.run()
 
-    return vi[0][0]
+    print(vi.V)
+    return vi.V[0]

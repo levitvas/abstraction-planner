@@ -1,6 +1,6 @@
 import copy
 
-from parser.state import State
+from sas_parser.state import State
 
 
 class OperatorSas:

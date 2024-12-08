@@ -1,4 +1,4 @@
-from parser.parser import Parser
+from sas_parser.parser import Parser
 
 
 def issubset(subset: frozenset[tuple[int, int]], superset: frozenset[tuple[int, int]]) -> bool:

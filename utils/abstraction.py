@@ -1,8 +1,8 @@
 import logging
 
-from parser.action import OperatorSas
-from parser.parser import Parser
-from parser.state import State
+from sas_parser.action import OperatorSas
+from sas_parser.parser import Parser
+from sas_parser.state import State
 
 def abstract_all(begin_state: list, end_state: State, parser: Parser, projection: list[int]):
     projection_vars = projection
@@ -11,7 +11,7 @@ def abstract_all(begin_state: list, end_state: State, parser: Parser, projection
         if i in projection_vars:
             continue
         abs_pos.append(i)
-    # abstraction_var: list[State] = [parser.variables[i] for i in abs_pos]
+    # abstraction_var: list[State] = [sas_parser.variables[i] for i in abs_pos]
 
     # Abstract beginning state
     new_begin_state: State = State(begin_state)
@@ -96,7 +96,7 @@ def create_state_space_with_shadow_states(operators, start_state):
                 # print("    Passed action: ",action.preconditions, action.effects, cur_state.variables, new_state.variables)
 
                 # TODO: Recheck mutex groups
-                # if not mutex_legal(new_state, parser.mutex_groups, parser.variables):
+                # if not mutex_legal(new_state, sas_parser.mutex_groups, sas_parser.variables):
                 #     continue
 
                 if new_state not in visited:
