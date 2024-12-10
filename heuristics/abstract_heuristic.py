@@ -7,6 +7,7 @@ from scipy.sparse import csr_matrix
 from sas_parser.parser import Parser
 from sas_parser.state import State
 from utils.abstraction import abstract_all, create_state_space_with_shadow_states, action_reduction
+from utils.gpu_value import FastValueIteration
 from utils.help_functions import check_goal
 from value_iter import optimized_value_iteration
 
@@ -137,15 +138,20 @@ class abstract_heuristic:
         try:
             a = np.array(transition_ar)
             b = np.array(reward_ar)
-            vi = ValueIteration(a, b, gamma)
+            vi_f = FastValueIteration(transition_ar, reward_ar, gamma)
             # vi = ValueIteration(a, b, gamma)
         except OverflowError:
             logging.error("MDP library error")
         except RuntimeWarning:
             logging.error("MDP library error")
-        vi.run()
+        # vi.run()
+        vi_f.run()
 
-        self.values = vi.V
+        # self.values = vi.V
+        # print(vi.time)
+        self.values = vi_f.V
+        # print(self.values)
+        # print(vi_f.V)
         self.bfs_states = bfs_states
         print("Finished solving MDP")
 

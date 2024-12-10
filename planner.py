@@ -43,8 +43,9 @@ def create_plan():
 
     heuristic = 'alternation'
     gamma = 0.9
-    projections = [[0, 1, 5], [1, 4, 5], [2, 7, 8], [3, 6, 8]]
-    projections = [[1, 6, 7, 8], [0, 4, 5, 6], [2, 3, 4, 5], [3, 4, 5, 6], [0, 2, 3, 8]]
+    projections = [[0, 1, 5], [1, 4, 5], [2, 7, 8], [3, 6, 8]] # Adding [2, 3, 5] makes it much worse
+    # projections = [[0], [1]]
+    # projections = [[1, 6, 7, 8], [2, 3, 4, 5], [3, 4, 5, 6], [0, 2, 3, 8]]
 
     if heuristic == 'hmax':
         predicted_cost = solve_sas(parser, [("hmax", hmax)])
@@ -57,9 +58,6 @@ def create_plan():
         predicted_cost = solve_sas(parser, heuristics)
     else:
         predicted_cost = solve_sas(parser, lm_cut)
-
-# Plan cost: 229
-# Expanded states: 234
 
 if __name__ == '__main__':
     create_plan()
