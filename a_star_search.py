@@ -66,7 +66,8 @@ def fdr_to_strips(state):
     return st
 
 
-def a_star(facts, init_state, actions, goal_state, heuristic, var_len, parser, gamma=None, projections=None):
+def a_star(facts, init_state, actions, goal_state, heuristics, var_len, parser):
+    print("Doing A*")
     g_score = dict()
     parent = dict()
     parent[tuple(init_state)] = None
@@ -80,31 +81,29 @@ def a_star(facts, init_state, actions, goal_state, heuristic, var_len, parser, g
 
     counter, preconditions_of, first_visit = initialize(facts, actions)
 
-    if projections is None:
-        open_sets = [[]]
-        current_projection = 0
-        heapq.heappush(open_sets[0], (
-            heuristic(facts, fdr_to_strips(init_state), actions, goal_strips, var_len, preconditions_of),
-            order, init_state))
-    else:
-        open_sets = [[] for _ in range(len(projections))]
-        current_projection = 0
-        for i, projection in enumerate(projections):
-            predicted_cost = heuristic(init_state, parser.end_state.variables, parser, gamma, projection)
-            heapq.heappush(open_sets[i], (predicted_cost, order, init_state))
+    open_sets = [[] for _ in range(len(heuristics))]
+    current_heuristic = 0
+    for idx, (name, heuristic) in enumerate(heuristics):
+        if name == "abs":
+            predicted_cost = heuristic(init_state) * -1
+            heapq.heappush(open_sets[idx], (predicted_cost, order, init_state))
+        else:
+            heapq.heappush(open_sets[idx], (
+                heuristic(facts, fdr_to_strips(init_state), actions, goal_strips, var_len, preconditions_of),
+                order, init_state))
+
 
     order += 1
     closed_set = set()
     closed_set.add(tuple(init_state))
-
     while any(open_set for open_set in open_sets):
 
-        while not open_sets[current_projection]:
-            current_projection = (current_projection + 1) % len(open_sets)
+        while not open_sets[current_heuristic]:
+            current_heuristic = (current_heuristic + 1) % len(open_sets)
             if all(not open_set for open_set in open_sets):
                 return None
 
-        score, count, current_state = heapq.heappop(open_sets[current_projection])
+        score, count, current_state = heapq.heappop(open_sets[current_heuristic])
 
         if check_goal(goal_state, current_state):
             return reconstruct_path(tuple(current_state), parent), expanded_states
@@ -128,14 +127,86 @@ def a_star(facts, init_state, actions, goal_state, heuristic, var_len, parser, g
 
                 # if check_goal(goal_state, child_state):
                 #     heur = 0
-                if projections is not None:
-                    for i, projection in enumerate(projections):
-                        heur = heuristic(child_state, parser.end_state.variables, parser, gamma, projection)
-                        heapq.heappush(open_sets[i], (new_g_score + heur, order, child_state))
-                else:
-                    heur = heuristic(facts, fdr_to_strips(child_state), actions, goal_strips, var_len, preconditions_of)
-                    heapq.heappush(open_sets[0], (new_g_score + heur, order, child_state))
+                for idx, (name, heuristic) in enumerate(heuristics):
+                    if name == "abs":
+                        predicted_cost = heuristic(child_state) * -1
+                        heapq.heappush(open_sets[idx], (predicted_cost, order, child_state))
+                    else:
+                        heapq.heappush(open_sets[idx], (
+                            heuristic(facts, fdr_to_strips(child_state), actions, goal_strips, var_len,
+                                      preconditions_of),
+                            order, child_state))
                 order += 1
 
-        current_projection = (current_projection + 1) % len(open_sets)
+        current_heuristic = (current_heuristic + 1) % len(open_sets)
+    return None
+
+
+def gbfs(facts, init_state, actions, goal_state, heuristics, var_len, parser):
+    print("Doing GBFS")
+    parent = dict()
+    parent[tuple(init_state)] = None
+    order = 0
+    expanded_states = 0
+
+    goal_strips = set()
+    for num, val in goal_state.items():
+        goal_strips.add((num, val))
+
+    counter, preconditions_of, first_visit = initialize(facts, actions)
+
+    open_sets = [[] for _ in range(len(heuristics))]
+    current_heuristic = 0
+
+    for idx, (name, heuristic) in enumerate(heuristics):
+        if name == "abs":
+            predicted_cost = heuristic(init_state) * -1
+            heapq.heappush(open_sets[idx], (predicted_cost, order, init_state))
+        else:
+            heapq.heappush(open_sets[idx], (
+                heuristic(facts, fdr_to_strips(init_state), actions, goal_strips, var_len, preconditions_of),
+                order, init_state))
+
+    order -= 1
+    closed_set = set()
+    closed_set.add(tuple(init_state))
+
+    while any(open_set for open_set in open_sets):
+        while not open_sets[current_heuristic]:
+            current_heuristic = (current_heuristic + 1) % len(open_sets)
+            if all(not open_set for open_set in open_sets):
+                return None
+
+        h_score, count, current_state = heapq.heappop(open_sets[current_heuristic])
+
+        if check_goal(goal_state, current_state):
+            return reconstruct_path(tuple(current_state), parent), expanded_states
+
+        applicable_ops = generate_applicable_operators(current_state, counter, preconditions_of, actions)
+
+        if not tuple(current_state) in closed_set:
+            closed_set.add(tuple(current_state))
+            expanded_states += 1
+
+        for action in applicable_ops:
+            action: OperatorSas = actions[action]
+            child_state, _sh_state = action.apply(current_state)
+            child_state = child_state.variables
+
+            if tuple(child_state) not in closed_set:
+                parent[tuple(child_state)] = (current_state, action, action.cost)
+
+                for idx, (name, heuristic) in enumerate(heuristics):
+                    if name == "abs":
+                        predicted_cost = heuristic(child_state) * -1
+                        heapq.heappush(open_sets[idx], (predicted_cost, order, child_state))
+                    else:
+                        heapq.heappush(open_sets[idx], (
+                            heuristic(facts, fdr_to_strips(child_state), actions, goal_strips, var_len,
+                                      preconditions_of),
+                            order, child_state))
+                order -= 1
+
+        current_heuristic = (current_heuristic + 1) % len(open_sets)
+
     return None

@@ -1,13 +1,13 @@
 import sys
 
-from a_star_search import a_star
-from heuristics.abstract_heuristic import abstract_h
+from a_star_search import a_star, gbfs
+from heuristics.abstract_heuristic import abstract_heuristic
 from heuristics.hmax_heuristic import hmax
 from heuristics.lmcut_heuristic import lm_cut
 from sas_parser.parser import Parser
 
 
-def solve_sas(parser: Parser, heuristic, gamma=None, projections=None):
+def solve_sas(parser: Parser, heuristics):
     bfs_sum = 0
     F = []
     g = set()
@@ -21,12 +21,8 @@ def solve_sas(parser: Parser, heuristic, gamma=None, projections=None):
     for var, val in parser.end_variables.items():
         g.add(F.index((var, val)))
 
-    # print(sas_parser.begin_state)
-    # print(sas_parser.end_variables)
-    # print(sas_parser.end_variables)
-    # print(F)
 
-    ret, expanded_states = a_star(F, parser.begin_state.variables, parser.operators, parser.end_variables, heuristic, len(parser.variables), parser, gamma, projections)
+    ret, expanded_states = gbfs(F, parser.begin_state.variables, parser.operators, parser.end_variables, heuristics, len(parser.variables), parser)
     if not ret:
         return 0
     cost, path = ret[0], ret[1]
@@ -39,28 +35,31 @@ def solve_sas(parser: Parser, heuristic, gamma=None, projections=None):
 def create_plan():
     # input_f = sys.argv[1]
     # heuristic = sys.argv[2]
-    input_f = 'transport-example.sas'
-    heuristic = 'abs'
-
-    # TODO: Dont resolve MDP, save the MDP for each projection.
-    # TODO: grid example, go diagonal
-    # TODO: GBFS
-    # TODO: Check other heuristics in alternation
-
-    projections = [[1, 2]]
-    gamma = 0.9
+    input_f = 'driverlog-3.sas'
 
     with open(input_f) as f:
         lines = f.read().split('\n')
     parser = Parser(lines)
 
+    heuristic = 'alternation'
+    gamma = 0.9
+    projections = [[0, 1, 5], [1, 4, 5], [2, 7, 8], [3, 6, 8]]
+    projections = [[1, 6, 7, 8], [0, 4, 5, 6], [2, 3, 4, 5], [3, 4, 5, 6], [0, 2, 3, 8]]
+
     if heuristic == 'hmax':
-        predicted_cost = solve_sas(parser, hmax)
+        predicted_cost = solve_sas(parser, [("hmax", hmax)])
     elif heuristic == 'abs':
-        predicted_cost = solve_sas(parser, abstract_h, gamma, projections)
+        predicted_cost = solve_sas(parser, [("abs", abstract_heuristic(parser.begin_state.variables, parser.end_state.variables, parser, gamma, projections[0]))])
+    elif heuristic == "alternation":
+        heuristics = [
+            ("abs", abstract_heuristic(parser.begin_state.variables, parser.end_state.variables, parser, gamma, x)) for
+            x in projections]
+        predicted_cost = solve_sas(parser, heuristics)
     else:
         predicted_cost = solve_sas(parser, lm_cut)
 
+# Plan cost: 229
+# Expanded states: 234
 
 if __name__ == '__main__':
     create_plan()
