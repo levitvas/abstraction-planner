@@ -23,17 +23,14 @@ class FastValueIteration:
         self.S = transition_matrix[0].shape[0]
         self.A = len(transition_matrix)
         self.V = torch.zeros(self.S, dtype=torch.float32, device=self.device)
+        self.R_dense = torch.stack([r.to_dense() for r in self.R])
+
 
     def bellman_operator(self):
-        Q = torch.zeros((self.A, self.S), device=self.device)
-
-        for a in range(self.A):
-            P_a = self.P[a]
-            R_a = self.R[a].to_dense()  # Get dense reward matrix for state-action pairs
-
-            future_values = P_a.matmul(self.V)
-            Q[a] = torch.sum(P_a.to_dense() * (R_a + self.gamma * self.V), dim=1)
-
+        # Stack sparse matrices for batch operation
+        P_batch = torch.stack([p.to_dense() for p in self.P])
+        future_values = torch.matmul(P_batch, self.V)
+        Q = torch.sum(P_batch * (self.R_dense + self.gamma * self.V), dim=2)
         self.V, self.policy = torch.max(Q, dim=0)
         return self.V, self.policy
 
