@@ -43,7 +43,11 @@ def create_plan():
 
     heuristic = 'alternation'
     gamma = 0.9
-    projections = [[0, 1, 5], [1, 4, 5], [2, 7, 8], [3, 6, 8]] # Adding [2, 3, 5] makes it much worse
+    # Change tie-braking to random
+    # For tie-braking try the average of other heuristics
+    # Try pure pattern DB, without shadow states, just solve the projection, that is the heuristic value
+    # print the heuristic used for the path
+    projections = [[2, 3, 5], [3, 6, 8], [1, 4, 5], [2, 7, 8], [0, 1, 5]] # Adding [2, 3, 5] makes it much worse
     # projections = [[0], [1]]
     # projections = [[1, 6, 7, 8], [2, 3, 4, 5], [3, 4, 5, 6], [0, 2, 3, 8]]
 

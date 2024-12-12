@@ -167,7 +167,7 @@ def gbfs(facts, init_state, actions, goal_state, heuristics, var_len, parser):
                 heuristic(facts, fdr_to_strips(init_state), actions, goal_strips, var_len, preconditions_of),
                 order, init_state))
 
-    order -= 1
+    order += 1
     closed_set = set()
     closed_set.add(tuple(init_state))
 
@@ -205,7 +205,7 @@ def gbfs(facts, init_state, actions, goal_state, heuristics, var_len, parser):
                             heuristic(facts, fdr_to_strips(child_state), actions, goal_strips, var_len,
                                       preconditions_of),
                             order, child_state))
-                order -= 1
+                order += 1
 
         current_heuristic = (current_heuristic + 1) % len(open_sets)
 
