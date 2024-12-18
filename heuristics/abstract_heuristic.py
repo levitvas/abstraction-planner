@@ -149,7 +149,7 @@ class abstract_heuristic:
 
         # self.values = vi.V
         # print(vi.time)
-        self.values = vi_f.V
+        self.values = vi_f.V.cpu().numpy()
         # print(self.values)
         # print(vi_f.V)
         self.bfs_states = bfs_states
