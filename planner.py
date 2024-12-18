@@ -50,7 +50,7 @@ def create_plan():
 
 
 
-    # Try out interesting PDB
+    # Try out interesting PDB, take a set, if too much
     # Compare and graph PDB and MDP
 
 
