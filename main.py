@@ -1,4 +1,5 @@
 from heuristics.abstract_heuristic import abstract_heuristic
+from heuristics.pdb_heuristic import pdb_heuristic
 from sas_parser.parser import Parser
 
 
@@ -26,5 +27,10 @@ if __name__ == '__main__':
 
     print(parser.begin_state)
     abstract_h = abstract_heuristic(parser.begin_state.variables, parser.end_state.variables, parser, gamma, projection)
+    abstract_pdb = pdb_heuristic(parser.begin_state.variables, parser.end_state.variables, parser, gamma, projection)
+
     predicted_cost = abstract_h(parser.begin_state.variables)
+    print(predicted_cost)
+
+    predicted_cost = abstract_pdb(parser.begin_state.variables)
     print(predicted_cost)

@@ -11,7 +11,7 @@ from utils.help_functions import check_goal
 
 
 def calculate_state_values_bfs(state_space, goal_states):
-    values = {state: float('inf') for state in state_space}
+    values = {state: float('inf') for state in state_space if not state.shadow_state}
     queue = []
 
     # Initialize goal states with value 0 and add to queue
@@ -22,11 +22,15 @@ def calculate_state_values_bfs(state_space, goal_states):
 
     while queue:
         state = queue.pop(0)
+        if state.shadow_state:
+            continue
         current_value = values[state]
 
         # Find all predecessors of current state
         for pred_state in state_space:
-            for action_results in pred_state.action_result:
+            if pred_state.shadow_state:
+                continue
+            for action_results in pred_state.action_result.values():
                 for succ_pos in action_results:
                     if state_space[succ_pos] == state:
                         new_value = current_value + 1
@@ -85,6 +89,7 @@ class pdb_heuristic:
             logging.error("! No actions")
 
         self.values = calculate_state_values_bfs(bfs_states, [bfs_states[idx] for idx in goal_idx])
+        print(self.values.values())
         self.bfs_states = bfs_states
         print("Finished solving MDP")
 
@@ -95,4 +100,4 @@ class pdb_heuristic:
                 abstracted_state.variables[idx] = -1
 
         # return self.values[self.bfs_states.index(abstracted_state)]
-        return self.values[self.state_positions[abstracted_state]]
+        return self.values[abstracted_state]

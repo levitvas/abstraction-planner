@@ -161,7 +161,7 @@ def gbfs(facts, init_state, actions, goal_state, heuristics, var_len, parser):
 
     for idx, (name, heuristic) in enumerate(heuristics):
         if name == "abs":
-            predicted_cost = heuristic(init_state) * -1
+            predicted_cost = heuristic(init_state)
             heapq.heappush(open_sets[idx], (predicted_cost, order, init_state))
         else:
             heapq.heappush(open_sets[idx], (
@@ -170,7 +170,7 @@ def gbfs(facts, init_state, actions, goal_state, heuristics, var_len, parser):
 
     # get random from 0 to 1, to get randomized tie-breaking
     order += 1
-    # order = random.random()
+    order = random.random()
     closed_set = set()
     closed_set.add(tuple(init_state))
 
@@ -200,25 +200,25 @@ def gbfs(facts, init_state, actions, goal_state, heuristics, var_len, parser):
                 parent[tuple(child_state)] = (current_state, action, action.cost)
 
                 # Random tie-breaking
-                # order = random.random()
+                order = random.random()
 
                 # Take average of other heuristics
                 heuristic_values = []
                 heuristic_sum = 0
                 for idx, (name, heuristic) in enumerate(heuristics):
                     if name == "abs":
-                        predicted_cost = heuristic(child_state) * -1
+                        predicted_cost = heuristic(child_state)
                         heuristic_sum += predicted_cost
                         heuristic_values.append((idx, predicted_cost))
-                        # heapq.heappush(open_sets[idx], (predicted_cost, order, child_state))
+                        heapq.heappush(open_sets[idx], (predicted_cost, order, child_state))
                     else:
                         heapq.heappush(open_sets[idx], (
                             heuristic(facts, fdr_to_strips(child_state), actions, goal_strips, var_len,
                                       preconditions_of),
                             order, child_state))
 
-                for idx, value in heuristic_values:
-                    heapq.heappush(open_sets[idx], (value, heuristic_sum / len(heuristic_values), child_state))
+                # for idx, value in heuristic_values:
+                #     heapq.heappush(open_sets[idx], (value, heuristic_sum / len(heuristic_values), child_state))
 
                 order += 1
 
