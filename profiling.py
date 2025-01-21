@@ -17,7 +17,7 @@ def main():
     profiler.enable()
 
     # Your planning app code here
-    create_plan()
+    create_plan("problems/driverlog-4.sas")
 
     profiler.disable()
     # Sort by cumulative time and print top 20 functions

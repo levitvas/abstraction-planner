@@ -89,9 +89,9 @@ class pdb_heuristic:
             logging.error("! No actions")
 
         self.values = calculate_state_values_bfs(bfs_states, [bfs_states[idx] for idx in goal_idx])
-        print(self.values.values())
+        # print(self.values.values())
         self.bfs_states = bfs_states
-        print("Finished solving MDP")
+        # print("Finished solving MDP")
 
     def __call__(self, state):
         abstracted_state: State = State(state.copy())

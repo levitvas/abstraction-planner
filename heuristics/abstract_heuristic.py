@@ -134,7 +134,7 @@ class abstract_heuristic:
             reward_ar.append(b)
 
         bfs_sum = 0
-        print("Starting MDP")
+        # print("Starting MDP")
         try:
             a = np.array(transition_ar)
             b = np.array(reward_ar)
@@ -153,7 +153,7 @@ class abstract_heuristic:
         # print(self.values)
         # print(vi_f.V)
         self.bfs_states = bfs_states
-        print("Finished solving MDP")
+        # print("Finished solving MDP")
 
     def __call__(self, state):
         abstracted_state: State = State(state.copy())

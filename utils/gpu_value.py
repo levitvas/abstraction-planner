@@ -6,7 +6,7 @@ import torch
 class FastValueIteration:
     def __init__(self, transition_matrix, reward_matrix, gamma=0.99, epsilon=0.01, max_iter=1000, device='cuda'):
         self.device = device if torch.cuda.is_available() else 'cpu'
-        print(self.device)
+        # print(self.device)
 
         # Convert scipy CSR to torch CSR
         self.P = [torch.sparse_csr_tensor(
