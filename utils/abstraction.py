@@ -1,9 +1,8 @@
 import logging
 
-from parser.action import OperatorSas
-from parser.parser import Parser
-from parser.state import State
-
+from sas_parser.action import OperatorSas
+from sas_parser.parser import Parser
+from sas_parser.state import State
 
 def abstract_all(begin_state: list, end_state: State, parser: Parser, projection: list[int]):
     projection_vars = projection
@@ -12,7 +11,7 @@ def abstract_all(begin_state: list, end_state: State, parser: Parser, projection
         if i in projection_vars:
             continue
         abs_pos.append(i)
-    # abstraction_var: list[State] = [parser.variables[i] for i in abs_pos]
+    # abstraction_var: list[State] = [sas_parser.variables[i] for i in abs_pos]
 
     # Abstract beginning state
     new_begin_state: State = State(begin_state)
@@ -81,6 +80,7 @@ def action_reduction(new_operators: list[OperatorSas]):
 
 def create_state_space_with_shadow_states(operators, start_state):
     visited = [start_state]
+    state_positions = {start_state: 0}
     stack = [start_state]
     shadow_state_number = 0
 
@@ -97,32 +97,39 @@ def create_state_space_with_shadow_states(operators, start_state):
                 # print("    Passed action: ",action.preconditions, action.effects, cur_state.variables, new_state.variables)
 
                 # TODO: Recheck mutex groups
-                # if not mutex_legal(new_state, parser.mutex_groups, parser.variables):
+                # if not mutex_legal(new_state, sas_parser.mutex_groups, sas_parser.variables):
                 #     continue
 
-                if new_state not in visited:
+                if new_state not in state_positions:  # Use hashmap for lookup
+                # if new_state not in visited:
                     position += 1
                     new_state.change_pos(position)
                     visited.append(new_state)
+                    state_positions[new_state] = position
                     stack.append(new_state)
                 else:
                     # for i in reversed(visited):
                     #     if i == new_state:
                     #         new_state.change_pos(i.position)
                     # TODO: Change back if slower
-                    new_state.change_pos(visited[visited.index(new_state)].position)
+                    # new_state.change_pos(visited[visited.index(new_state)].position)
+                    new_state.change_pos(state_positions[new_state])  # Get position from hashmap
+
                 # cur_state.action_state[copy.copy(action)] = new_state
                 cur_state.action_result[idx].append(new_state.position)
 
                 if shadow_state is not None:
-                    if shadow_state not in visited:
+                    # if shadow_state not in visited:
+                    if shadow_state not in state_positions:  # Use hashmap for shadow states too
                         shadow_state_number += 1
                         position += 1
                         shadow_state.change_pos(position)
                         visited.append(shadow_state)
+                        state_positions[shadow_state] = position  # Add to hashmap
                         stack.append(shadow_state)
                     else:
-                        shadow_state.change_pos(visited[visited.index(shadow_state)].position)
+                        # shadow_state.change_pos(visited[visited.index(shadow_state)].position)
+                        shadow_state.change_pos(state_positions[shadow_state])
                     cur_state.action_result[idx].append(shadow_state.position)
 
-    return visited, shadow_state_number
+    return visited, shadow_state_number, state_positions

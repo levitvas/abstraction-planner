@@ -2,7 +2,7 @@ import sys
 import math
 
 from a_star_search import initialize
-from parser.parser import Parser
+from sas_parser.parser import Parser
 
 
 def hmax(facts, state, actions, goal, var_len, preconditions_of):

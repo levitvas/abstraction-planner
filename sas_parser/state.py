@@ -28,6 +28,9 @@ class State:
         c = self.shadow_state == other.shadow_state
         return a and b and c
 
+    def __hash__(self):
+        return hash(tuple((tuple(self.variables), self.shadow_state, self.action_id)))
+
     def copy(self):
         return State(self.variables.copy(), self.action_id, self.name)
 
