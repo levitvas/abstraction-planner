@@ -5,6 +5,7 @@ import torch
 
 class FastValueIteration:
     def __init__(self, transition_matrix, reward_matrix, gamma=0.99, epsilon=0.01, max_iter=1000, device='cuda'):
+        self.policy = None
         self.device = device if torch.cuda.is_available() else 'cpu'
         # print(self.device)
 
@@ -23,15 +24,43 @@ class FastValueIteration:
         self.S = transition_matrix[0].shape[0]
         self.A = len(transition_matrix)
         self.V = torch.zeros(self.S, dtype=torch.float32, device=self.device)
-        self.R_dense = torch.stack([r.to_dense() for r in self.R])
+        # self.R_dense = torch.stack([r.to_dense() for r in self.R])
+        # self.P_batch = torch.stack([p.to_dense() for p in self.P])
+        # Precompute expected rewards
+        self.expected_rewards = []
+        for a in range(self.A):
+            P_a_coo = self.P[a].to_sparse_coo()
+            R_a_coo = self.R[a].to_sparse_coo()
+
+            P_indices = P_a_coo.indices()
+            P_values = P_a_coo.values()
+            R_values = R_a_coo.values()
+
+            PR_values = P_values * R_values
+
+            expected_reward = torch.zeros(self.S, device=self.device)
+            rows = P_indices[0]
+            expected_reward.scatter_add_(0, rows, PR_values)
+
+            self.expected_rewards.append(expected_reward)
 
 
     def bellman_operator(self):
-        # Stack sparse matrices for batch operation
-        P_batch = torch.stack([p.to_dense() for p in self.P])
-        future_values = torch.matmul(P_batch, self.V)
-        Q = torch.sum(P_batch * (self.R_dense + self.gamma * self.V), dim=2)
+        Q = torch.zeros((self.A, self.S), device=self.device)
+
+        for a in range(self.A):
+            # Use precomputed expected reward
+            expected_reward = self.expected_rewards[a]
+
+            # Compute expected future value using sparse matrix-vector product
+            expected_future_value = self.gamma * (self.P[a] @ self.V)
+
+            # Combine to get Q-values
+            Q[a] = expected_reward + expected_future_value
+
+        # Find the best action for each state
         self.V, self.policy = torch.max(Q, dim=0)
+
         return self.V, self.policy
 
     def run(self):

@@ -1,8 +1,4 @@
-import numpy as np
 import logging
-
-from hiive.mdptoolbox.mdp import ValueIteration
-from scipy.sparse import csr_matrix
 
 from sas_parser.parser import Parser
 from sas_parser.state import State
@@ -31,17 +27,12 @@ def calculate_state_values_bfs(state_space, goal_states):
             if pred_state.shadow_state:
                 continue
             for action_results in pred_state.action_result.values():
-                for succ_pos in action_results:
-                    if state_space[succ_pos] == state:
+                for successor_pos in action_results:
+                    if state_space[successor_pos] == state:
                         new_value = current_value + 1
                         if new_value < values[pred_state]:
                             values[pred_state] = new_value
                             queue.append(pred_state)
-
-    # Mark unreachable states with -1
-    for state, value in values.items():
-        if value == float('inf'):
-            values[state] = -1
 
     return values
 

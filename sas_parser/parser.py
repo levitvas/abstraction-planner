@@ -47,6 +47,9 @@ class Parser:
             elif isdigit(line):
                 # Skip line
                 continue
+            elif line == '':
+                # Check if it's a new line
+                continue
             else:
                 # Undefined line, break
                 print("Unknown line, please recheck SAS integrity: {}".format(line))

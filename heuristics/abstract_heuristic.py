@@ -1,7 +1,6 @@
 import numpy as np
 import logging
 
-from hiive.mdptoolbox.mdp import ValueIteration
 from scipy.sparse import csr_matrix
 
 from sas_parser.parser import Parser
@@ -94,7 +93,7 @@ class abstract_heuristic:
                     continue
 
                 next_state = state.action_result[idx][0]
-                data.append(round(operator.probability, 4))
+                data.append(round(operator.probability, 5))
                 row.append(pos)
                 col.append(next_state)
 
@@ -108,7 +107,7 @@ class abstract_heuristic:
 
                 if operator.probability != 1:
                     sh_state = state.action_result[idx][1]
-                    data.append(round(1 - operator.probability, 4))
+                    data.append(round(1 - operator.probability, 5))
                     row.append(pos)
                     sh_index = sh_state
                     col.append(sh_index)
