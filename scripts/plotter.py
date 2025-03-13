@@ -267,5 +267,5 @@ def plot_results(results_file: str, output_dir: str):
 
 
 if __name__ == '__main__':
-    os.makedirs('plots_new', exist_ok=True)
-    plot_results('comparison_results_newest_diff.json', 'plots_new')
+    os.makedirs('../plots_new', exist_ok=True)
+    plot_results('../comparison_results_newest_diff.json', 'plots_new')

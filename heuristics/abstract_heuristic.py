@@ -8,7 +8,6 @@ from sas_parser.state import State
 from utils.abstraction import abstract_all, create_state_space_with_shadow_states, action_reduction
 from utils.gpu_value import FastValueIteration
 from utils.help_functions import check_goal
-from value_iter import optimized_value_iteration
 
 
 class abstract_heuristic:

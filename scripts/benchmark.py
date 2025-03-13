@@ -1,11 +1,11 @@
 from heuristics.abstract_heuristic import abstract_heuristic
 from heuristics.pdb_heuristic import pdb_heuristic
-from planner import create_plan, solve_sas
+from planner import solve_sas
 
 import os
 import json
 import random
-from typing import Dict, List, Tuple
+from typing import Dict, List
 
 from sas_parser.parser import Parser
 from utils.interesting_patterns import find_interesting_patterns
@@ -193,4 +193,4 @@ def process_sas_files(output_file: str, problems_dir: str) -> None:
 
 
 if __name__ == '__main__':
-    process_sas_files('comparison_newest.json', 'problems')
+    process_sas_files('comparison_newest.json', '../problems')
