@@ -47,9 +47,9 @@ class abstract_heuristic:
             if check_goal(new_end, state) and state.shadow_state is False:
                 goal_idx.append(idx)
 
-        if len(final_operators) * len(
-                bfs_states) >= 2000000:  # Change number to make a limit. The higher the number the longer it runs
-            logging.error("! Excessive state space")
+        # if len(final_operators) * len(
+        #         bfs_states) >= 2000000:  # Change number to make a limit. The higher the number the longer it runs
+        #     logging.error("! Excessive state space")
 
         if len(final_operators) == 0:
             logging.error("! No actions")

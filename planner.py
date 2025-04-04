@@ -93,4 +93,4 @@ def create_plan(sas_file):
 
 
 if __name__ == '__main__':
-    create_plan("problems/driverlog/driverlog-4.sas")
+    create_plan("problems/elevator/elevator-11.sas")

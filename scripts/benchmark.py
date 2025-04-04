@@ -62,7 +62,11 @@ def process_sas_files(output_file: str, problems_dir: str) -> None:
     results = []
     pattern_amount = [2, 3, 4, 5, 6]
     pattern_sizes = [2, 3, 4]
-    gammas = [0.8, 0.9, 0.95, 0.99]
+    # Use growing somehow, use all patterns of size 2, then solve, sort and pick best
+    # For size 3, try to grow the patterns from 2, by adding one variable at a time, and doing that, then sort
+    # for 4, do the same, but with 3 variables, and so on
+
+    gamma = 0.99
 
     # Current methods: random, average
     tie_breaking_methods = ['random', 'average']
@@ -95,97 +99,97 @@ def process_sas_files(output_file: str, problems_dir: str) -> None:
 
                 goal_states = [pos for pos, variable in enumerate(parser.end_state.variables)
                                if variable != -1]
-                for current_gamma in gammas:
-                    print(f"Starting gamma {current_gamma}")
-                    problem_results['random_patterns'][f'gamma_{current_gamma}'] = {}
-                    problem_results['sorted_patterns'][f'gamma_{current_gamma}'] = {}
+                problem_results['random_patterns'] = {}
+                problem_results['sorted_patterns'] = {}
 
-                    for pattern_size in pattern_sizes:
-                        print(f"Starting pattern size {pattern_size}")
-                        # Get interesting patterns of size pattern_size
-                        interesting_patterns = find_interesting_patterns(
-                            [range(0, len(parser.variables), 1)],
-                            parser.operators,
-                            goal_states,
-                            pattern_size
-                        )
+                for pattern_size in pattern_sizes:
+                    print(f"Starting pattern size {pattern_size}")
+                    # Get interesting patterns of size pattern_size
+                    interesting_patterns = find_interesting_patterns(
+                        [range(0, len(parser.variables), 1)],
+                        parser.operators,
+                        goal_states,
+                        pattern_size
+                    )
 
-                        all_patterns = [list(pat) for pat in interesting_patterns
-                                        if len(pat) == pattern_size]
+                    all_patterns = [list(pat) for pat in interesting_patterns
+                                    if len(pat) == pattern_size]
 
-                        print(f"Found {len(all_patterns)} interesting patterns of size {pattern_size}")
-                        print("Starting pattern selection(MDP)")
-                        # Pick the first num_patterns patterns according to best reward from the solved MDP
-                        # So first create and solve a mdp and solve for each interesting pattern
-                        pattern_heuristic_pairs = [(pattern, abstract_heuristic(parser.begin_state.variables,
-                                                                                parser.end_state.variables,
-                                                                                parser, current_gamma, pattern)(parser.begin_state.variables)) for pattern in all_patterns]
+                    print(f"Found {len(all_patterns)} interesting patterns of size {pattern_size}")
+                    print("Starting pattern selection(MDP)")
+                    # Pick the first num_patterns patterns according to best reward from the solved MDP
+                    # So first create and solve a mdp and solve for each interesting pattern
 
-                        # Ignores states that are 0 directly, since they potentially can't solve much
-                        # sorted_pattern_heuristic_pairs = sorted(pattern_heuristic_pairs, key=lambda x: float('inf') if x[1] == 0 else x[1])
-                        sorted_pattern_heuristic_pairs = sorted(pattern_heuristic_pairs, key=lambda x: x[1], reverse=True)
-                        # print(sorted_pattern_heuristic_pairs[:5])
-                        # exit(0)
+                    # Improve here, to not solve for each pattern later, just reuse them
+                    pattern_heuristic_pairs = [(pattern, abstract_heuristic(parser.begin_state.variables,
+                                                                            parser.end_state.variables,
+                                                                            parser, gamma, pattern)(parser.begin_state.variables)) for pattern in all_patterns]
 
-                        # Two types of pattern selections
-                        # 0 is random, 1 is sorted by MDP value of init state (without 0)
-                        for select_type in range(2):
-                            select_type_name = 'random_patterns' if select_type == 0 else 'sorted_patterns'
-                            # Initialize the dictionary for the current pattern size
-                            if f'pattern_size_{pattern_size}' not in problem_results[select_type_name][f'gamma_{current_gamma}']:
-                                problem_results[select_type_name][f'gamma_{current_gamma}'][f'pattern_size_{pattern_size}'] = {}
-                            # For each number of patterns
-                            for idx, num_patterns in enumerate(pattern_amount):
-                                print(f"  Processing {filename} with {num_patterns} patterns of size {pattern_size}")
-                                if len(all_patterns) >= num_patterns:
+                    # Ignores states that are 0 directly, since they potentially can't solve much
+                    # sorted_pattern_heuristic_pairs = sorted(pattern_heuristic_pairs, key=lambda x: float('inf') if x[1] == 0 else x[1])
+                    sorted_pattern_heuristic_pairs = sorted(pattern_heuristic_pairs, key=lambda x: x[1], reverse=True)
+                    # print(sorted_pattern_heuristic_pairs[:5])
+                    # exit(0)
 
-                                    if select_type == 0:
-                                        print(f"  Processing {filename} with random pattern selection")
-                                        # Select patterns randomly
-                                        selected_patterns = random.sample(all_patterns, num_patterns)
-                                    else:
-                                        print(f"  Processing {filename} with sorted by MDP pattern selection")
-                                        # Select the best patterns according to the sorted heuristic
-                                        selected_patterns = [pair[0] for pair in sorted_pattern_heuristic_pairs][:num_patterns]
+                    # Two types of pattern selections
+                    # 0 is random, 1 is sorted by MDP value of init state (without 0)
+                    for select_type in range(2):
+                        select_type_name = 'random_patterns' if select_type == 0 else 'sorted_patterns'
+                        # Initialize the dictionary for the current pattern size
+                        if f'pattern_size_{pattern_size}' not in problem_results[select_type_name]:
+                            problem_results[select_type_name][f'pattern_size_{pattern_size}'] = {}
+                        # For each number of patterns
+                        for idx, num_patterns in enumerate(pattern_amount):
+                            print(f"  Processing {filename} with {num_patterns} patterns of size {pattern_size}")
+                            if len(all_patterns) >= num_patterns:
 
-                                    # Test with different tie-breaking methods
-                                    # tie_breaking_results = {}
-                                    # for tie_breaking in tie_breaking_methods:
-                                    print(f"    Using average tie-breaking")
-                                    result = solve_problem(parser, selected_patterns, "average", current_gamma)
-                                        # tie_breaking_results[tie_breaking] = result
-
-                                    problem_results[select_type_name][f'gamma_{current_gamma}'][f'pattern_size_{pattern_size}'][f'pattern_amount_{num_patterns}'] = {
-                                        'patterns': selected_patterns,
-                                        'tie_break_type': 'average',  # 'random' or 'average
-                                        'tie_breaking_result': result,
-                                        # 'tie_breaking_results': tie_breaking_results
-                                    }
+                                if select_type == 0:
+                                    print(f"  Processing {filename} with random pattern selection")
+                                    # Select patterns randomly
+                                    selected_patterns = random.sample(all_patterns, num_patterns)
                                 else:
-                                    print(f"Warning: Only {len(all_patterns)} patterns available for {filename}")
-                                    # # Use all available patterns
-                                    # tie_breaking_results = {}
-                                    # for tie_breaking in tie_breaking_methods:
-                                    #     print(f"Using {tie_breaking} tie-breaking")
-                                    #     result = solve_problem(parser, all_patterns, tie_breaking)
-                                    #     tie_breaking_results[tie_breaking] = result
-                                    #
-                                    # problem_results['pattern_variations'][f'pattern_size_{pattern_size}'][f'pattern_amount_{num_patterns}'] = {
-                                    #     'patterns': all_patterns,
-                                    #     'tie_breaking_results': tie_breaking_results
-                                    # }
-                                    # break
-                                    pass
+                                    print(f"  Processing {filename} with sorted by MDP pattern selection")
+                                    # Select the best patterns according to the sorted heuristic
+                                    selected_patterns = [pair[0] for pair in sorted_pattern_heuristic_pairs][:num_patterns]
 
-                                domain_result['problems'][filename] = problem_results
-                            results.append(domain_result)
-                            # Save intermediate results after each problem
-                            print(f"Saving intermediate results after completing {filename}")
-                            with open(output_file, 'w') as f:
-                                json.dump(results, f, indent=2)
-                            results.pop()
-                            print(f"Intermediate results saved successfully")
-                        print("Exited the first loop")
+                                # Test with different tie-breaking methods
+                                # tie_breaking_results = {}
+                                # for tie_breaking in tie_breaking_methods:
+                                print(f"    Using average tie-breaking")
+                                result = solve_problem(parser, selected_patterns, "average", gamma)
+                                    # tie_breaking_results[tie_breaking] = result
+
+                                problem_results[select_type_name][f'pattern_size_{pattern_size}'][f'pattern_amount_{num_patterns}'] = {
+                                    'patterns': selected_patterns,
+                                    'tie_break_type': 'average',  # 'random' or 'average
+                                    'tie_breaking_result': result,
+                                    # 'tie_breaking_results': tie_breaking_results
+                                }
+                            else:
+                                print(f"Warning: Only {len(all_patterns)} patterns available for {filename}")
+                                # # Use all available patterns
+                                # tie_breaking_results = {}
+                                # for tie_breaking in tie_breaking_methods:
+                                #     print(f"Using {tie_breaking} tie-breaking")
+                                #     result = solve_problem(parser, all_patterns, tie_breaking)
+                                #     tie_breaking_results[tie_breaking] = result
+                                #
+                                # problem_results['pattern_variations'][f'pattern_size_{pattern_size}'][f'pattern_amount_{num_patterns}'] = {
+                                #     'patterns': all_patterns,
+                                #     'tie_breaking_results': tie_breaking_results
+                                # }
+                                # break
+                                pass
+
+                            domain_result['problems'][filename] = problem_results
+                        results.append(domain_result)
+                        # Save intermediate results after each problem
+                        print(f"Saving intermediate results after completing {filename}")
+                        with open(output_file, 'w') as f:
+                            json.dump(results, f, indent=2)
+                        results.pop()
+                        print(f"Intermediate results saved successfully")
+                    print("Exited the first loop")
 
                 print("Exited the second loop")
 

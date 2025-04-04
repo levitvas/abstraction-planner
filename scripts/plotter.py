@@ -12,6 +12,7 @@ def create_domain_layout(domain_name, problems, figsize=(15, 12)):
     - 2 problems: side by side (1×2)
     - 3 problems: triangle layout
     - 4 problems: square layout (2×2)
+    - 6 problems: 2×3 grid
     - Others: automatic grid
 
     Args:
@@ -46,6 +47,11 @@ def create_domain_layout(domain_name, problems, figsize=(15, 12)):
         fig, axs = plt.subplots(2, 2, figsize=figsize)
         axs = axs.flatten()
 
+    elif num_problems == 6:
+        # Six problems - 2×3 grid
+        fig, axs = plt.subplots(2, 3, figsize=figsize)
+        axs = axs.flatten()
+
     # Set domain title and adjust layout
     domain_title = domain_name.split('/')[-1] if '/' in domain_name else domain_name
     fig.suptitle(f"{domain_title}", fontsize=16)
@@ -65,8 +71,9 @@ def plot_results(results_file: str, output_dir: str):
     with open(results_file, 'r') as f:
         results = json.load(f)
 
-    tie_breaking_methods = ['random']
-    pattern_sizes = ['0_num_1', "1_num_1", "2_num_1", "3_num_1", "4_num_1", "5_num_1", "6_num_1"]
+    # tie_breaking_methods = ['random']
+    # pattern_sizes = ['0_num_1', "1_num_1", "2_num_1", "3_num_1", "4_num_1", "5_num_1", "6_num_1"]
+
     print(f"Loaded {len(results)} results")
 
     # Create plots for each domain
@@ -81,90 +88,66 @@ def plot_results(results_file: str, output_dir: str):
             problem_name = problem['problem_name']
 
             domain_results[problem_name] = {}
-            domain_results[problem_name]['mdp'] = {}
-            domain_results[problem_name]['mdp']['cost'] = []
-            domain_results[problem_name]['mdp']['expanded'] = []
 
-            domain_results[problem_name]['pdb'] = {}
-            domain_results[problem_name]['pdb']['cost'] = []
-            domain_results[problem_name]['pdb']['expanded'] = []
+            # Graph - All configurations combined
+            domain_results[problem_name]['mdp'] = {'cost': [], 'expanded': []}
+            domain_results[problem_name]['pdb'] = {'cost': [], 'expanded': []}
 
-            domain_results[problem_name]['tie_breaking_cost'] = {}
-            domain_results[problem_name]['tie_breaking_cost']['random'] = []
-            domain_results[problem_name]['tie_breaking_cost']['average'] = []
+            # Graph - plots for the gamma values, cost and expanded states
+            domain_results[problem_name]['gamma'] = {}
 
+            # Graph - plots for the pattern size cost, grouped by pattern amount
             domain_results[problem_name]['pattern_size_cost'] = {}
 
+            # Graph - plots for the pattern selection type, random or sorted
             domain_results[problem_name]['pattern_select_type'] = {}
 
             print(f"Creating plots for {domain_name}/{problem_name}")
 
             pattern_types = ['random_patterns', 'sorted_patterns']
+            # problems/problem_name
             for pattern_type in pattern_types:
                 domain_results[problem_name]['pattern_select_type'][pattern_type] = []
-                for pattern_size in problem[pattern_type]:
-                    if pattern_size not in domain_results[problem_name]['pattern_size_cost']:
-                        domain_results[problem_name]['pattern_size_cost'][pattern_size] = []
+                # problems/problem_name/gamma
+                for gamma in problem[pattern_type]:
+                    if gamma not in domain_results[problem_name]['gamma']:
+                        domain_results[problem_name]['gamma'][gamma] = {}
+                        domain_results[problem_name]['gamma'][gamma]['mdp'] = {'cost': [], 'expanded': []}
+                        domain_results[problem_name]['gamma'][gamma]['pdb'] = {'cost': [], 'expanded': []}
 
-                    for pattern_amount in problem[pattern_type][pattern_size]:
+                    # problems/problem_name/
+                    for pattern_size in problem[pattern_type][gamma]:
+                        if pattern_size not in domain_results[problem_name]['pattern_size_cost']:
+                            domain_results[problem_name]['pattern_size_cost'][pattern_size] = {'cost': [], 'mdp': [0], 'pdb': [0], 'expand': [0], 'mdp_expand': [0], 'pdb_expand': [0]}
+                        # problems/problem_name/gamma/pattern_type/pattern_size
+                        for pattern_amount in problem[pattern_type][gamma][pattern_size]:
 
-                        for tie_breaking_type in problem[pattern_type][pattern_size][pattern_amount]['tie_breaking_results']:
-
-                            short_name = problem[pattern_type][pattern_size][pattern_amount]['tie_breaking_results'][tie_breaking_type]
+                            short_name = problem[pattern_type][gamma][pattern_size][pattern_amount]['tie_breaking_result']
                             for heuristic_type in short_name:
                                 resulting_cost = short_name[heuristic_type]['cost'] if short_name[heuristic_type]['cost'] != -1 else 0
+                                expanded_states = short_name[heuristic_type]['expanded_states'] if short_name[heuristic_type]['expanded_states'] != -1 else 0
 
-                                # Tie-breaking cost
-                                domain_results[problem_name]['tie_breaking_cost'][tie_breaking_type].append(
-                                    resulting_cost)
+                                # Either MDP or PDB
+                                domain_results[problem_name][heuristic_type]['cost'].append(resulting_cost)
+                                domain_results[problem_name][heuristic_type]['expanded'].append(expanded_states)
 
-                                if tie_breaking_type == 'average':
-                                    # Either MDP or PDB
-                                    # I compute without random, since there is no point, because its always worse
-                                    domain_results[problem_name][heuristic_type]['cost'].append(resulting_cost)
-                                    domain_results[problem_name][heuristic_type]['expanded'].append(
-                                        short_name[heuristic_type]['expanded_states'])
+                                # Gamma
+                                domain_results[problem_name]['gamma'][gamma][heuristic_type]['cost'].append(resulting_cost)
+                                domain_results[problem_name]['gamma'][gamma][heuristic_type]['expanded'].append(expanded_states)
 
-                                    # Pattern type costs
-                                    domain_results[problem_name]['pattern_size_cost'][pattern_size].append(resulting_cost)
+                                # Pattern type costs
+                                domain_results[problem_name]['pattern_size_cost'][pattern_size]['cost'].append(resulting_cost)
+                                domain_results[problem_name]['pattern_size_cost'][pattern_size][heuristic_type].append(resulting_cost)
+                                domain_results[problem_name]['pattern_size_cost'][pattern_size]['expand'].append(expanded_states)
+                                domain_results[problem_name]['pattern_size_cost'][pattern_size][f'{heuristic_type}_expand'].append(expanded_states)
 
-                                    # Pattern selection type
-                                    domain_results[problem_name]['pattern_select_type'][pattern_type].append(resulting_cost)
+                                # Pattern selection type
+                                domain_results[problem_name]['pattern_select_type'][pattern_type].append(resulting_cost)
+
+        print(f"Done collecting data for {domain_name}")
 
         # Create plots for the domain
         os.makedirs(f'{output_dir}/{domain_name}', exist_ok=True)
-        # Start with bar plot between average tie breaking cost and expanded states as well as solved problems
-        fig, axs = create_domain_layout(domain_name, domain_results.keys())
-        for i, problem_name in enumerate(domain_results):
-            problem = domain_results[problem_name]
-            ax = axs[i]
-
-            # Create bar plot for average tie breaking cost
-            ax.bar(['Random', 'Average'], [np.sum(problem['tie_breaking_cost']['random'])/np.count_nonzero(problem['tie_breaking_cost']['random']),
-                                           np.sum(problem['tie_breaking_cost']['average'])/np.count_nonzero(problem['tie_breaking_cost']['average'])], color=['skyblue', 'lightcoral'])
-            ax.set_title(f"{problem_name} - Average Tie Breaking Cost")
-            ax.set_ylabel('Average Cost')
-            ax.set_xlabel('Tie Breaking Method')
-
-        plt.savefig(f'{output_dir}/{domain_name}/average_tie_breaking_cost.png', dpi=300, bbox_inches='tight')
-        plt.close()
-
-        # Now for the success rate
-        fig, axs = create_domain_layout(domain_name, domain_results.keys())
-        for i, problem_name in enumerate(domain_results):
-            problem = domain_results[problem_name]
-            ax = axs[i]
-
-            # Create bar plot for number of solved problems for random vs average tie-breaking
-            # the cost is 0 when the problem is not solved
-            ax.bar(['Random', 'Average'], [np.count_nonzero(problem['tie_breaking_cost']['random']),
-                                           np.count_nonzero(problem['tie_breaking_cost']['average'])], color=['skyblue', 'lightcoral'])
-            ax.set_title(f"{problem_name} - Solved Problems")
-            ax.set_ylabel('Number of Solved Problems')
-            ax.set_xlabel('Tie Breaking Method')
-
-        plt.savefig(f'{output_dir}/{domain_name}/solved_problems.png', dpi=300, bbox_inches='tight')
-        plt.close()
 
         # Now scatter plots for MDP vs PDB cost
         fig, axs = create_domain_layout(domain_name, domain_results.keys())
@@ -196,31 +179,110 @@ def plot_results(results_file: str, output_dir: str):
         plt.savefig(f'{output_dir}/{domain_name}/mdp_vs_pdb_expanded.png', dpi=300, bbox_inches='tight')
         plt.close()
 
-        fig, axs = create_domain_layout(domain_name, domain_results.keys())
+        # Now bar plot between average pattern size cost and scatter between mdp vs pdb grouped by size
+        # on each row is a pattern size len bar graphs + scatter plot
+        # row amount = problem amount
+        # fig, axs = create_domain_layout(domain_name, domain_results.keys())
+
+        fig, axs = plt.subplots(len(domain_results.keys()), 2, figsize=(15, 15))
         for i, problem_name in enumerate(domain_results):
             problem = domain_results[problem_name]
-            ax = axs[i]
 
-            for h_type in ['mdp', 'pdb']:
-                ax.bar(h_type, np.count_nonzero(problem[h_type]['cost']))
-            ax.set_title(f"{problem_name} - Solved Problems")
-            ax.set_ylabel('Number of Solved Problems')
-            ax.set_xlabel('Pattern Size')
-        plt.savefig(f'{output_dir}/{domain_name}/solved_problems_mdp_vs_pdb.png', dpi=300, bbox_inches='tight')
+            # Bar plot for average pattern size cost
+            ax_bar = axs[i, 0]
+            for pattern_size in problem['pattern_size_cost']:
+                ax_bar.bar(pattern_size, np.sum(problem['pattern_size_cost'][pattern_size]['cost']) / np.count_nonzero(
+                    problem['pattern_size_cost'][pattern_size]['cost']))
+            ax_bar.set_title(f"{problem_name} - Average Pattern Size Cost")
+            ax_bar.set_ylabel('Average Cost')
+            ax_bar.set_xlabel('Pattern Size')
+
+            # Scatter plot for MDP vs PDB cost
+            ax_scatter = axs[i, 1]
+            for pattern_size in problem['pattern_size_cost']:
+                ax_scatter.scatter(problem['pattern_size_cost'][pattern_size]['mdp'], problem['pattern_size_cost'][pattern_size]['pdb'], alpha=0.8, label=f'Pattern Size: {pattern_size}')
+            ax_scatter.plot([0, max(problem['pattern_size_cost'][pattern_size]['mdp'])], [0, max(problem['pattern_size_cost'][pattern_size]['pdb'])], 'r--', alpha=0.5)
+
+            ax_scatter.set_title(f"{problem_name} - MDP vs PDB Cost")
+            ax_scatter.set_xlabel('MDP Cost')
+            ax_scatter.set_ylabel('PDB Cost')
+            ax_scatter.legend()
+
+        plt.tight_layout()
+        plt.savefig(f'{output_dir}/{domain_name}/average_pattern_size_cost_and_scatter.png', dpi=300,
+                    bbox_inches='tight')
         plt.close()
 
-        # Now bar plot between average pattern size cost
-        fig, axs = create_domain_layout(domain_name, domain_results.keys())
+        fig, axs = plt.subplots(len(domain_results.keys()), 2, figsize=(15, 15))
         for i, problem_name in enumerate(domain_results):
             problem = domain_results[problem_name]
-            ax = axs[i]
 
+            # Bar plot for average pattern size cost
+            ax_bar = axs[i, 0]
             for pattern_size in problem['pattern_size_cost']:
-                ax.bar(pattern_size, np.sum(problem['pattern_size_cost'][pattern_size])/np.count_nonzero(problem['pattern_size_cost'][pattern_size]))
-            ax.set_title(f"{problem_name} - Average Pattern Size Cost")
-            ax.set_ylabel('Average Cost')
-            ax.set_xlabel('Pattern Size')
-        plt.savefig(f'{output_dir}/{domain_name}/average_pattern_size_cost.png', dpi=300, bbox_inches='tight')
+                ax_bar.bar(pattern_size, np.sum(problem['pattern_size_cost'][pattern_size]['expand']) / np.count_nonzero(
+                    problem['pattern_size_cost'][pattern_size]['expand']))
+            ax_bar.set_title(f"{problem_name} - Average Pattern Size Cost")
+            ax_bar.set_ylabel('Average Cost')
+            ax_bar.set_xlabel('Pattern Size')
+
+            # Scatter plot for MDP vs PDB cost
+            ax_scatter = axs[i, 1]
+            for pattern_size in problem['pattern_size_cost']:
+                ax_scatter.scatter(problem['pattern_size_cost'][pattern_size]['mdp_expand'],
+                                   problem['pattern_size_cost'][pattern_size]['pdb_expand'], alpha=0.8,
+                                   label=f'Pattern Size: {pattern_size}')
+            ax_scatter.plot([0, max(problem['pattern_size_cost'][pattern_size]['mdp_expand'])],
+                            [0, max(problem['pattern_size_cost'][pattern_size]['pdb_expand'])], 'r--', alpha=0.5)
+
+            ax_scatter.set_title(f"{problem_name} - MDP vs PDB Expanded")
+            ax_scatter.set_xscale('log')
+            ax_scatter.set_yscale('log')
+            ax_scatter.set_xlabel('MDP Expanded')
+            ax_scatter.set_ylabel('PDB Expanded')
+            ax_scatter.legend()
+
+        plt.tight_layout()
+        plt.savefig(f'{output_dir}/{domain_name}/average_pattern_size_exp_and_scatter.png', dpi=300,
+                    bbox_inches='tight')
+        plt.close()
+
+        # Gamma bar plots
+        # columns for gamma values, rows for problems
+        fig, axs = plt.subplots(len(domain_results.keys()), 3, figsize=(15, 15))
+        for i, problem_name in enumerate(domain_results):
+            for j, gamma in enumerate(domain_results[problem_name]['gamma']):
+                problem = domain_results[problem_name]['gamma'][gamma]
+
+                # Bar plot for average pattern size cost
+                ax_bar = axs[i, j]
+                ax_bar.bar(['MDP', 'PDB'], [np.sum(problem['mdp']['cost']) / np.count_nonzero(problem['mdp']['cost']),
+                                            np.sum(problem['pdb']['cost']) / np.count_nonzero(problem['pdb']['cost'])], color=['skyblue', 'lightcoral'])
+                ax_bar.set_title(f"{problem_name}-Avg Cost-Gamma: {gamma}")
+                ax_bar.set_ylabel('Average Cost')
+                ax_bar.set_xlabel('Heuristic')
+
+        plt.tight_layout()
+        plt.savefig(f'{output_dir}/{domain_name}/average_cost_gamma.png', dpi=300, bbox_inches='tight')
+        plt.close()
+
+        # Gamma scatter plots
+        # columns for gamma values, rows for problems
+        fig, axs = plt.subplots(len(domain_results.keys()), 3, figsize=(15, 15))
+        for i, problem_name in enumerate(domain_results):
+            for j, gamma in enumerate(domain_results[problem_name]['gamma']):
+                problem = domain_results[problem_name]['gamma'][gamma]
+
+                # Scatter plot for MDP vs PDB cost
+                ax_scatter = axs[i, j]
+                ax_scatter.scatter(problem['mdp']['cost'], problem['pdb']['cost'], alpha=0.8, color="green")
+                ax_scatter.plot([0, max(problem['mdp']['cost'])], [0, max(problem['mdp']['cost'])], 'r--', alpha=0.5)
+                ax_scatter.set_title(f"{problem_name} - MDP vs PDB Cost - Gamma: {gamma}")
+                ax_scatter.set_xlabel('MDP Cost')
+                ax_scatter.set_ylabel('PDB Cost')
+
+        plt.tight_layout()
+        plt.savefig(f'{output_dir}/{domain_name}/mdp_vs_pdb_cost_gamma.png', dpi=300, bbox_inches='tight')
         plt.close()
 
         # Now the same, but with the amount of solved problems
@@ -267,5 +329,5 @@ def plot_results(results_file: str, output_dir: str):
 
 
 if __name__ == '__main__':
-    os.makedirs('../plots_new', exist_ok=True)
-    plot_results('../comparison_results_newest_diff.json', 'plots_new')
+    os.makedirs('../plots_newest', exist_ok=True)
+    plot_results('comparison_newest.json', '../plots_newest')
