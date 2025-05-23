@@ -4,7 +4,7 @@ import torch
 
 
 class FastValueIteration:
-    def __init__(self, transition_matrix, reward_matrix, gamma=0.99, epsilon=0.01, max_iter=1000, device='cuda'):
+    def __init__(self, transition_matrix, reward_matrix, gamma=0.99, epsilon=0.01, max_iter=1000, device='cuda', prev_V=None):
         self.policy = None
         self.device = device if torch.cuda.is_available() else 'cpu'
         # print(self.device)
@@ -23,7 +23,10 @@ class FastValueIteration:
         self.max_iter = max_iter
         self.S = transition_matrix[0].shape[0]
         self.A = len(transition_matrix)
-        self.V = torch.zeros(self.S, dtype=torch.float32, device=self.device)
+        if prev_V is not None:
+            self.V = torch.tensor(prev_V, dtype=torch.float32, device=self.device)
+        else:
+            self.V = torch.zeros(self.S, dtype=torch.float32, device=self.device)
         # self.R_dense = torch.stack([r.to_dense() for r in self.R])
         # self.P_batch = torch.stack([p.to_dense() for p in self.P])
         # Precompute expected rewards

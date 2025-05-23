@@ -3,9 +3,10 @@ from typing import Iterator
 
 
 class State:
+    __slots__ = ('variables', 'name', 'action_result', 'action_id', 'shadow_state', 'position')
+
     def __init__(self, variables, original_state=-1, name=None):
         # Currently variables are strings
-        # TODO: potentially change to integers
         self.variables: list[int] = variables
         self.name: str = name
         self.action_result: dict[int, list] = defaultdict(list)  # first one is normal state, second is shadow
@@ -23,16 +24,22 @@ class State:
         return self.__str__()
 
     def __eq__(self, other):
-        a = self.variables == other.variables
-        b = self.action_id == other.action_id
-        c = self.shadow_state == other.shadow_state
-        return a and b and c
+        if self is other:
+            return True
+        if not isinstance(other, State):  # Type check
+            return False
+        if self.action_id != other.action_id or self.shadow_state != other.shadow_state:
+            return False
+        return self.variables == other.variables
 
     def __hash__(self):
-        return hash(tuple((tuple(self.variables), self.shadow_state, self.action_id)))
+        h = hash(tuple(self.variables))
+        h = h * 31 + hash(self.shadow_state)
+        h = h * 31 + hash(self.action_id)
+        return h
 
     def copy(self):
         return State(self.variables.copy(), self.action_id, self.name)
 
-    def __iter__(self) -> Iterator:
+    def __iter__(self):
         return iter(self.variables)

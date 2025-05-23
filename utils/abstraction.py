@@ -63,7 +63,8 @@ def action_reduction(new_operators: list[OperatorSas]):
                     for op2 in ops2:
                         if op.probability > op2.probability:
                             # new_operators.remove(op)
-                            groups[(pre2, eff2)].remove(op)
+                            if op in groups[(pre2, eff2)]:
+                                groups[(pre2, eff2)].remove(op)
                             break
     logging.debug("% Operators after removing dominated operators: {}".format(sum(len(v) for v in groups.values())))
 
@@ -87,7 +88,6 @@ def create_state_space_with_shadow_states(operators, start_state):
     position = 0
     while stack:
         cur_state = stack.pop(0)
-        # TODO: Change to existing get_applicable in a_star, if it will add performance. Check it out later
         # print("Current state: ", cur_state.variables)
         for idx, action in enumerate(operators):
             # print("  Try action: ", action.name)
@@ -108,11 +108,6 @@ def create_state_space_with_shadow_states(operators, start_state):
                     state_positions[new_state] = position
                     stack.append(new_state)
                 else:
-                    # for i in reversed(visited):
-                    #     if i == new_state:
-                    #         new_state.change_pos(i.position)
-                    # TODO: Change back if slower
-                    # new_state.change_pos(visited[visited.index(new_state)].position)
                     new_state.change_pos(state_positions[new_state])  # Get position from hashmap
 
                 # cur_state.action_state[copy.copy(action)] = new_state
@@ -128,7 +123,6 @@ def create_state_space_with_shadow_states(operators, start_state):
                         state_positions[shadow_state] = position  # Add to hashmap
                         stack.append(shadow_state)
                     else:
-                        # shadow_state.change_pos(visited[visited.index(shadow_state)].position)
                         shadow_state.change_pos(state_positions[shadow_state])
                     cur_state.action_result[idx].append(shadow_state.position)
 

@@ -20,7 +20,7 @@ def initialize(facts, operators):
 
 
 def generate_applicable_operators(state, counter, preconditions_of, actions):
-    applicable_ops = []
+    applicable_ops = set()
     first_visit = [True] * len(actions)
     for num, fact in enumerate(state):
         for op_idx in preconditions_of[(num, fact)]:
@@ -31,7 +31,7 @@ def generate_applicable_operators(state, counter, preconditions_of, actions):
 
     for a in range(len(actions)):
         if counter[a] == 0 and not first_visit[a]:
-            applicable_ops.append(a)
+            applicable_ops.add(a)
 
     return applicable_ops
 
@@ -55,7 +55,7 @@ def reconstruct_path(node, parents):
     while parents[tuple(node)] is not None:
         path.append((parents[node][0], parents[node][1]))
         cost += parents[node][2]
-        node = tuple(parents[node][0])
+        node = parents[node][0]
         nodes.add(node)
     return cost, path[::-1]
 
@@ -150,6 +150,7 @@ def gbfs(facts, init_state, actions, goal_state, heuristics, var_len, tie_breaki
     parent[tuple(init_state)] = None
     order = 0
     expanded_states = 0
+    operator_cache = {}
 
     goal_strips = set()
     for num, val in goal_state.items():
@@ -195,32 +196,36 @@ def gbfs(facts, init_state, actions, goal_state, heuristics, var_len, tie_breaki
                 return None
 
         h_score, count, current_state = heapq.heappop(open_sets[current_heuristic])
+        current_state_tuple = tuple(current_state)
 
         if check_goal(goal_state, current_state):
             # print(f"popped!! {[len(x) for x in open_sets]}")
             # print(f"Revisted states: {revisited_states}")
-            return reconstruct_path(tuple(current_state), parent), expanded_states
+            return reconstruct_path(current_state_tuple, parent), expanded_states
 
-        applicable_ops = generate_applicable_operators(current_state, counter, preconditions_of, actions)
+        # applicable_ops = generate_applicable_operators(current_state, counter, preconditions_of, actions)
+        if current_state_tuple in operator_cache:
+            applicable_ops = operator_cache[current_state_tuple]
+        else:
+            applicable_ops = generate_applicable_operators(current_state, counter, preconditions_of, actions)
+            operator_cache[current_state_tuple] = applicable_ops
 
         # if tuple(current_state) in closed_set:
-        if tuple(current_state) in closed_sets[current_heuristic]:
+        if current_state_tuple in closed_sets[current_heuristic]:
             # print(f"popped!! {[len(x) for x in open_sets]}")
             revisited_states += 1
             current_heuristic = (current_heuristic + 1) % len(open_sets)
             continue
 
-        if tuple(current_state) not in closed_sets[current_heuristic]:
+        # if current_state_tuple not in closed_sets[current_heuristic]:
         # if tuple(current_state) not in closed_set:
         #     closed_set.add(tuple(current_state))
-            closed_sets[current_heuristic].add(tuple(current_state))
+        closed_sets[current_heuristic].add(current_state_tuple)
             # print("popped")
-            expanded_states += 1
-
-
+        expanded_states += 1
 
         for action in applicable_ops:
-            if time.time() - time_start > time_limit:
+            if expanded_states % 1000 == 0 and time.time() - time_start > time_limit:
                 print(f"+ Time limit reached {expanded_states}")
                 return (-1, None), -1
             action: OperatorSas = actions[action]
@@ -228,15 +233,15 @@ def gbfs(facts, init_state, actions, goal_state, heuristics, var_len, tie_breaki
             child_state = child_state.variables
 
             child_tuple = tuple(child_state)
-            new_cost = path_costs[tuple(current_state)] + action.cost
-            if tuple(child_state) not in closed_sets[current_heuristic]:
+            new_cost = path_costs[current_state_tuple] + action.cost
+            if child_tuple not in closed_sets[current_heuristic]:
             # if child_tuple not in closed_set:
                 if child_tuple not in path_costs or new_cost < path_costs[child_tuple]:
                     path_costs[child_tuple] = new_cost
-                    parent[child_tuple] = (current_state, action, action.cost)
+                    parent[child_tuple] = (current_state_tuple, action, action.cost)
 
                     # Random tie-breaking
-                    order = random.random()
+                    order += 1
 
                     # Take average of other heuristics
                     heuristic_values = []

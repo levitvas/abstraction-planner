@@ -11,7 +11,7 @@ from utils.help_functions import check_goal
 
 
 class abstract_heuristic:
-    def __init__(self, begin_state, end_state, parser: Parser, gamma, projection: list[int]):
+    def __init__(self, begin_state, end_state, parser: Parser, gamma, projection: list[int], prev_V=None):
         # ------------ Abstraction implementation
         # logging.basicConfig(level=logging.DEBUG)
         logging.debug("%% Abstracting")
@@ -22,10 +22,10 @@ class abstract_heuristic:
                 continue
             abs_pos.append(i)
         self.abs_pos = abs_pos
+        self.cache = {}
         new_start, new_end, new_operators = abstract_all(begin_state.copy(), end_state.copy(), parser, projection)
         logging.debug(new_start)
         logging.debug(new_end)
-        # TODO: Change all stuff to use integers instead of strings
 
         logging.debug(new_operators)
         final_operators = action_reduction(new_operators)
@@ -38,7 +38,6 @@ class abstract_heuristic:
                                                                        new_start)  # Starts from beginning state and generates all possible states
         self.state_positions = state_positions
         logging.debug("% State space size: {}, shadow states {}".format(len(bfs_states) - shadow_num, shadow_num))
-        # logging.debug([op.action_result.items() for op in bfs_states])
         logging.debug("% ------ %")
 
         #  In theory can find the goal ids when state spacing
@@ -46,10 +45,6 @@ class abstract_heuristic:
         for (idx, state) in enumerate(bfs_states):
             if check_goal(new_end, state) and state.shadow_state is False:
                 goal_idx.append(idx)
-
-        # if len(final_operators) * len(
-        #         bfs_states) >= 2000000:  # Change number to make a limit. The higher the number the longer it runs
-        #     logging.error("! Excessive state space")
 
         if len(final_operators) == 0:
             logging.error("! No actions")
@@ -132,32 +127,27 @@ class abstract_heuristic:
             reward_ar.append(b)
 
         bfs_sum = 0
-        # print("Starting MDP")
         try:
             a = np.array(transition_ar)
             b = np.array(reward_ar)
             vi_f = FastValueIteration(transition_ar, reward_ar, gamma)
-            # vi = ValueIteration(a, b, gamma)
         except OverflowError:
             logging.error("MDP library error")
         except RuntimeWarning:
             logging.error("MDP library error")
-        # vi.run()
         vi_f.run()
 
-        # self.values = vi.V
-        # print(vi.time)
         self.values = vi_f.V.cpu().numpy() * -1
-        # print(self.values)
-        # print(vi_f.V)
         self.bfs_states = bfs_states
-        # print("Finished solving MDP")
+
+    def get_average_cost(self):
+        return np.mean(self.values)
 
     def __call__(self, state):
-        abstracted_state: State = State(state.copy())
-        for (idx, atom) in enumerate(abstracted_state):
+        abs_vars = state.copy()
+        for (idx, atom) in enumerate(abs_vars):
             if idx in self.abs_pos:
-                abstracted_state.variables[idx] = -1
+                abs_vars[idx] = -1
 
-        # return self.values[self.bfs_states.index(abstracted_state)]
-        return self.values[self.state_positions[abstracted_state]]
+        result = self.values[self.state_positions[State(abs_vars)]]
+        return result

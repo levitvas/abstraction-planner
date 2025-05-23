@@ -54,7 +54,6 @@ class pdb_heuristic:
 
         logging.debug(new_operators)
         final_operators = action_reduction(new_operators)
-        # logging.debug(final_operators)
         logging.debug("% ------ %")
 
         logging.debug("Creating state space")
@@ -63,7 +62,6 @@ class pdb_heuristic:
                                                                        new_start)  # Starts from beginning state and generates all possible states
         self.state_positions = state_positions
         logging.debug("% State space size: {}, shadow states {}".format(len(bfs_states) - shadow_num, shadow_num))
-        # logging.debug([op.action_result.items() for op in bfs_states])
         logging.debug("% ------ %")
 
         #  In theory can find the goal ids when state spacing
@@ -80,9 +78,7 @@ class pdb_heuristic:
             logging.error("! No actions")
 
         self.values = calculate_state_values_bfs(bfs_states, [bfs_states[idx] for idx in goal_idx])
-        # print(self.values.values())
         self.bfs_states = bfs_states
-        # print("Finished solving MDP")
 
     def __call__(self, state):
         abstracted_state: State = State(state.copy())
@@ -90,5 +86,4 @@ class pdb_heuristic:
             if idx in self.abs_pos:
                 abstracted_state.variables[idx] = -1
 
-        # return self.values[self.bfs_states.index(abstracted_state)]
         return self.values[abstracted_state]
