@@ -57,36 +57,6 @@ cd abstraction-planner
 pip install numpy scipy torch matplotlib networkx
 ```
 
-## Usage
-
-### Running the Planner
-
-```python
-# Example of using the planner with a SAS+ problem file
-from planner import create_plan
-
-# Run the planner on a problem
-create_plan("problems/driverlog/driverlog-4.sas")
-```
-
-### Benchmarking
-
-```python
-# Run benchmark on all problems in a directory
-from benchmark import process_sas_files
-
-process_sas_files('results.json', 'path/to/problems')
-```
-
-### Generating Plots
-
-```python
-# Generate plots from benchmark results
-from plotter import plot_results
-
-plot_results('results.json', 'plots')
-```
-
 ## Acknowledgments
 
 This project was developed as part of my master's thesis at CTU. Special thanks to [Rostislav Horčík](https://www.aic.fel.cvut.cz/members/rostislav-horcik), as my thesis supervisor, for guidance and support.
